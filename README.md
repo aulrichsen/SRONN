@@ -20,7 +20,7 @@ test_ONN_learning:  creates random input and random (non-linear) target funtion 
 
 Uses MacLaurin series approximations to create learnable non-linear convolutional filters.
 
-![alt text](https://github.com/aulrichsen/Self-ONN/blob/master/MacLaurin_Series.png?raw=true)
+![alt text](https://github.com/aulrichsen/Self-ONN/blob/main/MacLaurin_Series.png?raw=true)
 
 Achieves this by taking all input channels and raising them to all the powers up to the specified q_order (the approximation order) and applying regular convolution to all the original and raised channels. Note, there is no bias in the convolution and a seperate bias layer is applied after the convolution as this is how the MacLaurin approximation is performed.
 
