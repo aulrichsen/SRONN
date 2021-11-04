@@ -13,49 +13,13 @@ import torch
 import torch.nn as nn
 
 
-class Operator_Layer_Grouped(nn.Module):
-
-    def __init__(self, in_channels, out_channels, ks: int = 3, q_order: int = 3):
-        """
-        q_order: the MacLaurin series order approximation
-        """
-        super(Operator_Layer_Grouped, self).__init__()
-
-        self.in_channels = in_channels
-        self.q_order = q_order
-
-        #torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None)
-
-        self.operator = nn.Conv2d(in_channels*q_order, out_channels, ks, groups=in_channels, bias=False)
-        self.bias = nn.Parameter(torch.rand(1,out_channels,1,1))
-
-    def forward(self, x):
-        # Raise inputs up to power q 
-        power_input = [x]
-        for q in range(2, self.q_order+1):
-            power_input.append(torch.pow(x, q))
-        power_input = torch.cat(power_input, 1)
-
-        swap_indicies = []
-        for q in range(self.q_order):
-            for c in range(self.in_channels):
-                swap_indicies.append(q+c*self.q_order)
-
-        print("swap_indicies:", swap_indicies)
-
-        power_input = power_input[:, swap_indicies]
-
-        operator_out = self.operator(power_input)
-
-        return operator_out + self.bias
-        #return self.bias(operator_out)
-
-
 class Operator_Layer(nn.Module):
-
-    def __init__(self, in_channels, out_channels, ks: int = 3, q_order: int = 3):
+    def __init__(self, in_channels: int, out_channels: int, ks: int = 3, q_order: int = 3):
         """
-        q_order: the MacLaurin series order approximation
+        q_order:        the MacLaurin series approximation order    
+        in_channels:    number of image channels layer input has
+        out_channels:   number of desired output channels from layer
+        ks:             convlution kernel filter size
         """
         super(Operator_Layer, self).__init__()
 

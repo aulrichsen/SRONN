@@ -3,9 +3,7 @@ import torch.nn as nn
 
 from Self_ONN import Operator_Layer
 
-#conv_layer = torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None)
-
-q_ord = 3
+q_ord = 3       # Number of terms in MacLaurin series approximation
 in_chans = 2
 out_chans = 3
 bs=64
@@ -67,8 +65,9 @@ for epoch in range(100000):
         #print(model.operator.weight)
         #print(model.operator.bias)
 
+print("True weights model learned:")
 print(model.operator.weight)
-print(model.operator.bias)
-print("learn weights:")
+print("bias:", model.operator.bias)
+print("target learning weights (should be in the centre of the filter, surrounding values should be ~0):")
 print(learn_weights)
-print(torch.sum(learn_weights, 1))
+print("weight sum for each power term:", torch.sum(learn_weights, 1))
