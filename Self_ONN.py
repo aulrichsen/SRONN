@@ -41,6 +41,33 @@ class Operator_Layer(nn.Module):
 
         return operator_out
 
+class Operator_Layer_Split(nn.Module):
+    """
+    Operator Layer where each q component is a seperate group so that learning rates can be set individually
+    """
+
+    def __init__(self, in_channels, out_channels, ks: int = 3, q_order: int = 3):
+        """
+        q_order: the MacLaurin series order approximation
+        """
+        super(Operator_Layer_Split, self).__init__()
+
+        self.in_channels = in_channels
+        self.q_order = q_order
+
+        #torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None)
+
+        self.operators = nn.ModuleList([nn.Conv2d(in_channels, out_channels, ks)] + [nn.Conv2d(in_channels, out_channels, ks, bias=False) for _ in range(q_order-1)]    )
+        #self.bias = nn.Parameter(torch.rand(1,out_channels,1,1))
+
+    def forward(self, x):
+        # Raise inputs up to power q 
+        out = self.operators[0](x)
+        for q in range(2, self.q_order+1):
+            out += self.operators[q-1](torch.pow(x, q))
+
+        return out
+
 if __name__ == "__main__":
     ip = torch.ones(2,2,4,4)
 
