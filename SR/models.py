@@ -40,12 +40,12 @@ class Three_Layer_ONN(nn.Module):
     #     x = self.OP_layer_3(x)
     #     x = self.act(x)
     #     return x
-        self.layer_1 = Operator_Layer(in_channels, 32, ks, q_order)
-        self.layer_2 = Operator_Layer(32, 128, 1, q_order)
-        self.layer_3 = Operator_Layer(128, 32, ks, q_order)
-        self.layer_4 = Operator_Layer(32, 48, ks, q_order)
-        self.layer_5 = Operator_Layer(48, 48, 5, q_order)
-        self.layer_6 = Operator_Layer(48, out_channels, 5, q_order)
+        self.OP_layer_1 = Operator_Layer(in_channels, 32, ks, q_order)
+        self.OP_layer_2 = Operator_Layer(32, 128, 1, q_order)
+        self.OP_layer_3 = Operator_Layer(128, 32, ks, q_order)
+        self.OP_layer_4 = Operator_Layer(32, 48, ks, q_order)
+        self.OP_layer_5 = Operator_Layer(48, 48, 5, q_order)
+        self.OP_layer_6 = Operator_Layer(48, out_channels, 5, q_order)
         
         self.act = act  # Activation fiunction
         

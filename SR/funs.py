@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-import pywt
-import tensorflow as tf
+#import pywt
+#import tensorflow as tf
 import math
 
 def bicubic_lr (img, ratio):

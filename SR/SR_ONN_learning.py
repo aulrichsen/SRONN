@@ -36,7 +36,9 @@ class SRDataset(Dataset):
 #LOADING, PATCHING, AND PREPARING PAVIA DATASET
 
 
-hsi =  scipy.io.loadmat('D:\HSI_SR_datasets\PaviaU.mat').get('paviaU') 
+#hsi =  scipy.io.loadmat('D:\HSI_SR_datasets\PaviaU.mat').get('paviaU') 
+hsi =  scipy.io.loadmat('C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset/PaviaU.mat').get('paviaU') 
+
 #hsi = hsi/np.max(hsi)
 ################################################################################
 # get image tiles
