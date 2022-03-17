@@ -15,7 +15,7 @@ from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
 from utils import *
 
 from Training import train
-from models import Three_Layer_ONN, Three_Layer_ONN_BN
+from models import SRCNN, SRONN, SRONN_BN
 from Load_Data import get_paiva_data
 
 
@@ -41,11 +41,15 @@ def acquisition_function(hyperparameters, sample_save_file, model_type):
 
     best_local_psnr = 0
 
-    for i in range(3):
-        if model_type == "Regular":
-            model = Three_Layer_ONN(in_channels=channels, out_channels=channels).to(device)
-        elif model_type == "Batch_Norm":
-            model = Three_Layer_ONN_BN(in_channels=channels, out_channels=channels).to(device)
+    for i in range(2):
+        if model_type == "SRCNN":
+            model = SRCNN(channels=channels).to(device)
+        elif model_type == "SRONN":
+            model = SRONN(channels=channels).to(device)
+        elif model_type == "SRONN_BN":
+            model = SRONN_BN(channels=channels).to(device)
+        elif model_type == "SRONN_BN_Relu":
+            model = SRONN_BN(channels=channels, act=nn.ReLU()).to(device)
         else:
             assert False, "Invalid model_type"
 
@@ -77,13 +81,6 @@ if __name__ == '__main__':
 
     channels = x_train.shape[1]
 
-    model = Three_Layer_ONN(in_channels=channels, out_channels=channels).to(device)
-
-    stats_file = os.getcwd() + "/stats.json"
-
-    global_best_acc = 0
-
-
     # Specifiy hyperparameter exploration ranges
     lrMin = 0.000000001     # Smallest learning rate
     lrMax = 0.01             # Largest learning rate
@@ -94,27 +91,23 @@ if __name__ == '__main__':
     print("Bounds:", bounds.shape)
 
     # === Regular Model Optimisation ===
-    # Use custom kernel and estimator to match previous example
-    m52 = ConstantKernel(1.0) * Matern(length_scale=1.0, nu=2.5)
-    gpr = GaussianProcessRegressor(kernel=m52, alpha=13-4) #noise**2)
+    def optimize(sample_savefile, model_type):
+        # Use custom kernel and estimator to match previous example
+        m52 = ConstantKernel(1.0) * Matern(length_scale=1.0, nu=2.5)
+        gpr = GaussianProcessRegressor(kernel=m52, alpha=13-4) #noise**2)
 
-    r = gp_minimize(lambda x: acquisition_function(np.array(x), "Regular_model_samples.json", "Regular"), 
-                bounds.tolist(),
-                base_estimator=gpr,
-                acq_func='EI',      # expected improvement
-                xi=0.01,            # exploitation-exploration trade-off
-                n_calls=12,         # number of iterations
-                n_random_starts=5)  # initial samples are provided
+        r = gp_minimize(lambda x: acquisition_function(np.array(x), sample_savefile, model_type), 
+                    bounds.tolist(),
+                    base_estimator=gpr,
+                    acq_func='EI',      # expected improvement
+                    xi=0.01,            # exploitation-exploration trade-off
+                    n_calls=12,         # number of iterations
+                    n_random_starts=5)  # initial samples are provided
 
-    # === BN Model Optimisation ===
-    # Use custom kernel and estimator to match previous example
-    m52 = ConstantKernel(1.0) * Matern(length_scale=1.0, nu=2.5)
-    gpr = GaussianProcessRegressor(kernel=m52, alpha=13-4) #noise**2)
+    optimize("SRCNN_model_samples.json", "SRCNN")
 
-    r = gp_minimize(lambda x: acquisition_function(np.array(x), "BN_model_samples.json", "Batch_Norm"), 
-                bounds.tolist(),
-                base_estimator=gpr,
-                acq_func='EI',      # expected improvement
-                xi=0.01,            # exploitation-exploration trade-off
-                n_calls=12,         # number of iterations
-                n_random_starts=5)  # initial samples are provided
+    optimize("SRONN_model_samples.json", "SRONN")
+
+    optimize("SRONN_BN_model_samples.json", "SRONN_BN")
+
+    optimize("SRONN_BN_model_samples.json", "SRONN_BN_Relu")

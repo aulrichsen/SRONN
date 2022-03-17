@@ -13,13 +13,24 @@ from Load_Data import get_paiva_data
 
 from models import Three_Layer_ONN
 
+"""
+Current State of the art
+
+
+
+Draw.io for figures!
+
+"""
+
+
+
 def eval(model, X, Y, disp_imgs=False):
     """
     Get performance metrics
-    PSNR: Peak Signal to Noise Ratio (higher the better)
-    SSIM: Structural Similarity Index Measure
+    PSNR: Peak Signal to Noise Ratio (higher the better); Spatial quality metric
+    SSIM: Structural Similarity Index Measurement; Spatial quality metric
             Predicts perceived quality of videos. Simiilarity between 2 images. 1 if identical, lower = more difference.
-    SAM:    Unsure... Could be specral angle mapper?
+    SAM:    Spectral Angle Mapper; Spectral quality metric, measures similarity between two vectors, pixel spectrum, averaged across each pixel
     """
 
     model.eval()
@@ -32,9 +43,12 @@ def eval(model, X, Y, disp_imgs=False):
         predicted_output = model(X)
     test_size = predicted_output.size()[0]
     for i in range (0,test_size):
+        predicted_output = torch.clamp(predicted_output, min=0, max=1) # Clip values above 1 and below 0
+
         predict = predicted_output.cpu()[i,:,:,:]
         predict = predict.permute(1, 2, 0)
         predict = predict.detach().numpy()
+        
         grountruth = Y.cpu()[i,:,:,:]
         grountruth = grountruth.permute(1, 2, 0)
         grountruth = grountruth.detach().numpy()
@@ -51,7 +65,7 @@ def eval(model, X, Y, disp_imgs=False):
             axs[0].imshow(predict[:,:,2],cmap='gray')
             axs[1].imshow(grountruth[:,:,2],cmap='gray')
     
-    if disp_imgs: fig.savefig("HSI Output Images.png")
+    if disp_imgs: fig.savefig(disp_imgs)
 
     avg_psnr = sum(all_psnr)/len(all_psnr)
     avg_ssim = sum(all_ssim)/len(all_ssim)
@@ -170,5 +184,5 @@ if __name__ == '__main__':
 
     # Test best PSNR model
     model.load_state_dict(torch.load(SAVE_NAME+"_best_PSNR.pth.tar"))
-    _psnr, _ssim, _sam = eval(model, x_test, y_test, disp_imgs=True)
-    print(f"best PSNR model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}")
+    _psnr, _ssim, _sam = eval(model, x_test, y_test, disp_imgs="Best PSNR Out Image")
+    print(f"best PSNR model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | S.pngAM: {round(_sam, 3)}")
