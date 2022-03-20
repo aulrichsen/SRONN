@@ -1,15 +1,11 @@
+import os
+
 import torch
 import torch.nn as nn
-import  torchvision
-
-
-from torch.utils.data import DataLoader, Dataset
-#from SRDataset import SRDataset
 import scipy.io
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split
-
 import cv2
 from patchify import patchify
 
@@ -25,8 +21,13 @@ def hsi_normalize_full(hsi):
     img = tmp/np.max(tmp)
     return img
 
-def bicubic_lr (img, ratio):
-    # Function to create Low Resolution images using Bicubic Interpolation
+def bicubic_lr(img, ratio):
+    """
+    Function to create Low Resolution images using Bicubic Interpolation
+    
+    ** Note ** - ask why INTER_CUBIC interpolation used to scale back up
+    """
+
     if ratio == 2:
         sigma = 0.8943
     else:
@@ -40,9 +41,23 @@ def bicubic_lr (img, ratio):
     img_up = cv2.resize(im_down, (w, h),interpolation=cv2.INTER_CUBIC)
     return img_up
 
-def get_paiva_data():
+def get_pavia_data(res_ratio=2):
+
+    # Find directory for relevant computer
+    PC_DIR = 'C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset'  # For my PC
+    MAC_DIR = "../datasets"  # For my Mac
+    NOUR_DIR = 'D:/HSI_SR_datasets'  # Nour's directory
+    PAVIA_DIRS = [PC_DIR, MAC_DIR, NOUR_DIR]
+
+    for dir in PAVIA_DIRS:
+        if os.path.isdir(dir):
+            PAVIA_DATA_DIR = dir
+            break
+    else:
+        assert False, 'No directories specified in cow_data_dirs found. Please add path to cow data directory'
+
     #hsi =  scipy.io.loadmat('D:\HSI_SR_datasets\PaviaU.mat').get('paviaU') 
-    hsi =  scipy.io.loadmat('C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset/PaviaU.mat').get('paviaU') 
+    hsi =  scipy.io.loadmat(PAVIA_DATA_DIR + '/PaviaU.mat').get('paviaU') 
 
     print(hsi.shape)
 
@@ -73,22 +88,22 @@ def get_paiva_data():
         for j in range(TILES.shape[1]):          
             hr_tiles.append(np.squeeze(TILES[i,j,:,:,:,:], axis = (0,)))
 
-    # Normalize each tiles
+    # Normalize each tile
     hr_tiles_nor = []
-    for i in range(len(hr_tiles)):
-        hr_tiles_nor.append(hsi_normalize_full(hr_tiles[i]))
+    for hr_tile in hr_tiles:
+        hr_tiles_nor.append(hsi_normalize_full(hr_tile))
         
     print(len(hr_tiles))
     print(hr_tiles_nor[0].shape)
+    print(type(hr_tiles_nor[0]))
     print(hr_tiles[-1].shape)
 
 
     # Create Low resolution tiles
     lr_tiles = []
-    ratio = 2
-    for i in list(range(len(hr_tiles))):
+    for hr_tile_nor in hr_tiles_nor:
         #print("Processing tile # " , i)
-        lr_tiles.append(bicubic_lr(hr_tiles_nor[i], ratio))
+        lr_tiles.append(bicubic_lr(hr_tile_nor, res_ratio))
 
 
     X = np.array(lr_tiles)

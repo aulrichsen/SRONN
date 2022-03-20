@@ -16,7 +16,7 @@ from utils import *
 
 from Training import train
 from models import SRCNN, SRONN, SRONN_BN
-from Load_Data import get_paiva_data
+from Load_Data import get_pavia_data
 
 
 def acquisition_function(hyperparameters, sample_save_file, model_type):
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     SAVE_NAME = "ONN_Paiva_test"
 
-    x_train, y_train, x_val, y_val, x_test, y_test = get_paiva_data()
+    x_train, y_train, x_val, y_val, x_test, y_test = get_pavia_data()
     x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
 
     channels = x_train.shape[1]

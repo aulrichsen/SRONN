@@ -1,6 +1,8 @@
 import os 
 import json
 
+import matplotlib.pyplot as plt
+
 
 def saveSample(sample, data_save_name='hyperparameterSamples.json'):
     path = data_save_name
@@ -45,4 +47,21 @@ def loadSamples(filename='hyperparameterSamples.json'):
     return jsonFileData
 
 
+def imshow(inp, title=None):
+    """
+    Imshow for Tensor.
+    Saves to output file output_image.png for use in docker.
+    """
+    inp = inp.numpy().transpose((1,2,0))
+    plt.figure()#figsize = (500,100))
+    #plt.figsize=(80, 60)
+    if title:
+        plt.title(title)
+    plt.imshow(inp)
+    plt.pause(0.001)    # pause a bit so the plots are updated
+    if title:
+        plt.savefig(title+".png")
+    else:    
+        plt.savefig("output_image.png")
+    plt.draw()
         
