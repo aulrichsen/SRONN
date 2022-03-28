@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
         best_PSNRs.append(samp["Best PSNR"])
 
-    print("Best PSNR on sample:", best_sample)
+    print("Best PSNR on sample:", best_sample, "| PSNR:", samples[best_sample-1]["Best PSNR"])
 
     x = [i+1 for i in range(len(best_PSNRs))]
     plt.plot(x, best_PSNRs)
