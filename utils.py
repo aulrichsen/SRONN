@@ -66,5 +66,5 @@ def imshow(inp, title=None, plt_title=None):
         plt.savefig(title+".png")
     else:    
         plt.savefig("output_image.png")
-    plt.draw()
-        
+    #plt.draw()
+    plt.close()

@@ -95,6 +95,7 @@ if __name__ == '__main__':
         print("device:", device)
 
         model.load_state_dict(torch.load(opt.model_file, map_location=torch.device(device)))
+        model.to(device)
         model.eval()
 
         if not os.path.isdir("images/"):
@@ -114,7 +115,8 @@ if __name__ == '__main__':
             ext_count += 1
             ext = " " + str(ext_count)
 
-        output = model(test_X)
+        with torch.no_grad(): 
+            output = model(test_X)
 
         for disp_img in range(test_X.shape[0]):
             for disp_chan in range(disp_img, test_X.shape[1], 10):
