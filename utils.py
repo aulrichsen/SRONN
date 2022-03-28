@@ -47,7 +47,7 @@ def loadSamples(filename='hyperparameterSamples.json'):
     return jsonFileData
 
 
-def imshow(inp, title=None):
+def imshow(inp, title=None, plt_title=None):
     """
     Imshow for Tensor.
     Saves to output file output_image.png for use in docker.
@@ -55,10 +55,13 @@ def imshow(inp, title=None):
     inp = inp.numpy().transpose((1,2,0))
     plt.figure()#figsize = (500,100))
     #plt.figsize=(80, 60)
-    if title:
+    if plt_title:
+        plt.title(plt_title)
+    elif title:
         plt.title(title)
     plt.imshow(inp)
     plt.pause(0.001)    # pause a bit so the plots are updated
+    
     if title:
         plt.savefig(title+".png")
     else:    
