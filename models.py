@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from Self_ONN import Operator_Layer
 
@@ -78,6 +79,7 @@ class SRCNN(nn.Module):
     """
     def __init__(self, channels):
         super(SRCNN, self).__init__()
+        self.name = "SRCNN"
 
         self.conv_1 = nn.Conv2d(channels, 128, kernel_size=9, padding='same') # Saye valid padding in SRCNN repo ...
         nn.init.xavier_uniform_(self.conv_1.weight)  # Init with golrot uniform weights
@@ -100,7 +102,8 @@ class SRONN(nn.Module):
     """
     def __init__(self, channels, q_order=3):
         super(SRONN, self).__init__()
-        
+        self.name = "SRONN"
+
         self.op_1 = SelfONN2d(channels, 128, 9, q=q_order, padding='same')
         self.op_2 = SelfONN2d(128, 64, 3, q=q_order, padding='same')
         self.op_3 = SelfONN2d(64, channels, 5, q=q_order, padding='same')
@@ -123,11 +126,12 @@ class SRONN(nn.Module):
 
 class SRONN_BN(nn.Module):
     """
-    ONN Version of SRCNN
+    ONN Version of SRCNN with Batch Normalisation
     """
     def __init__(self, channels, q_order=3, act=nn.Tanh()):
         super(SRONN_BN, self).__init__()
-        
+        self.name = "SRONN_BN"
+
         self.op_1 = SelfONN2d(channels, 128, 9, q=q_order, padding='same')
         nn.init.xavier_uniform_(self.op_1.weight)  # Init with golrot uniform weights
         self.bn_1 = nn.BatchNorm2d(128)
@@ -142,6 +146,24 @@ class SRONN_BN(nn.Module):
     def forward(self, x):
         x = self.act(self.bn_1(self.op_1(x)))
         x = self.act(self.bn_2(self.op_2(x)))
+        x = self.op_3(x)
+        return x
+
+class SRONN_L2(nn.Module):
+    """
+    ONN Version of SRCNN with L2 Normalisation and no activation function.
+    """
+    def __init__(self, channels, q_order=3):
+        super(SRONN_L2, self).__init__()
+        self.name = "SRONN_L2"
+        
+        self.op_1 = SelfONN2d(channels, 128, 9, q=q_order, padding='same')
+        self.op_2 = SelfONN2d(128, 64, 3, q=q_order, padding='same')
+        self.op_3 = SelfONN2d(64, channels, 5, q=q_order, padding='same')
+     
+    def forward(self, x):
+        x = F.normalize(self.op_1(x), p=2, dim=(2,3))
+        x = F.normalize(self.op_2(x), p=2, dim=(2,3))
         x = self.op_3(x)
         return x
 

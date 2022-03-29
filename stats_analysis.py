@@ -8,6 +8,7 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 
 from models import *
 from Load_Data import get_pavia_data
+from Training import eval
 from utils import loadSamples, imshow
 
 """
@@ -78,8 +79,10 @@ if __name__ == '__main__':
         _, _, _, _, test_X, test_Y = get_pavia_data()
         channels = test_X.shape[1]
 
-
-        if "SRONN_BN" in opt.model_file:
+        if "test" in opt.model_file:
+            model_name = "Three_Layer_ONN"
+            model = Three_Layer_ONN(in_channels=channels, out_channels=channels)
+        elif "SRONN_BN" in opt.model_file:
             model_name = "SRONN_BN"
             model = SRONN_BN(channels=channels)
         elif "SRONN" in opt.model_file:
@@ -94,15 +97,19 @@ if __name__ == '__main__':
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print("device:", device)
 
+        test_X = test_X.to(device)
+        test_Y = test_Y.to(device)
+
         model.load_state_dict(torch.load(opt.model_file, map_location=torch.device(device)))
         model.to(device)
         model.eval()
 
+        _psnr, _ssim, _sam = eval(model, test_X, test_Y)
+        metric_info = f"PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
+        print(metric_info)
+
         if not os.path.isdir("images/"):
             os.mkdir("images")
-
-        test_X = test_X.to(device)
-        test_Y = test_Y.to(device)
 
         save_dir = False
         ext = ""
@@ -114,6 +121,10 @@ if __name__ == '__main__':
                 
             ext_count += 1
             ext = " " + str(ext_count)
+
+        with open(save_dir+'/info.txt', 'w') as f:
+            f.write('Average Test Metrics\n')
+            f.write(metric_info)
 
         with torch.no_grad(): 
             output = model(test_X)
@@ -127,7 +138,7 @@ if __name__ == '__main__':
                 out = torch.clamp(out, min=0, max=1)
                 images = torch.stack([img, out, lab])
 
-                PSNR = psnr(out.permute(1,2,0).cpu().detach().numpy(), lab.permute(1,2,0).cpu().detach().numpy())
+                PSNR = psnr(lab.permute(1,2,0).cpu().detach().numpy(), out.permute(1,2,0).cpu().detach().numpy())
                 imshow(torchvision.utils.make_grid(images), title=save_dir+f"/Img {disp_img}, Slice {disp_chan}, PSNR {round(PSNR)}", plt_title=f"Low Res  | Model Output {round(PSNR, 2)} PSNR |   High Res")
 
 

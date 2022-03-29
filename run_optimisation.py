@@ -74,8 +74,6 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("device:", device)    
 
-    SAVE_NAME = "ONN_Paiva_test"
-
     x_train, y_train, x_val, y_val, x_test, y_test = get_pavia_data()
     x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
 
@@ -104,10 +102,10 @@ if __name__ == '__main__':
                     n_calls=12,         # number of iterations
                     n_random_starts=5)  # initial samples are provided
 
-    optimize("SRCNN_model_samples.json", "SRCNN")
+    optimize("SRCNN_model_samples.json")
 
-    optimize("SRONN_model_samples.json", "SRONN")
+    optimize("SRONN_model_samples.json")
 
-    optimize("SRONN_BN_model_samples.json", "SRONN_BN")
+    optimize("SRONN_BN_model_samples.json")
 
-    optimize("SRONN_BN_model_samples.json", "SRONN_BN_Relu")
+    optimize("SRONN_BN_model_samples.json")
