@@ -152,7 +152,11 @@ def train(model, x_train, y_train, x_val, y_val, epochs=10000, lr=0.0001, lr_ste
         ssims.append(val_ssim)
         sams.append(val_sam)
         
-        epoch_summary = f"Epoch: {epoch+1}, | Loss: {round(loss.item(), 7)} | PSNR: {round(val_psnr, 3)} | SSIM: {round(val_ssim, 3)} | SAM: {round(val_sam, 3)}"
+        for param_group in optimizer.param_groups:
+            current_lr = param_group['lr']
+            break
+
+        epoch_summary = f"Epoch: {epoch+1} | Loss: {round(loss.item(), 7)} | PSNR: {round(val_psnr, 3)} | SSIM: {round(val_ssim, 3)} | SAM: {round(val_sam, 3)} | LR: {current_lr}"
         logging.info(epoch_summary)
 
         if (epoch + 1) % stats_disp == 0 or epoch == 0:
@@ -193,9 +197,11 @@ if __name__ == '__main__':
 
     channels = x_train.shape[1]
 
-    model = SRONN_L2(channels=channels).to(device)
-    
-    psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=0.001, lr_step=3000, wb_group=model.name)
+    #model = SRONN_L2(channels=channels).to(device)
+    #model = SRCNN(channels=channels).to(device)
+    model = SRONN(channels=channels).to(device)
+
+    psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=0.01, lr_step=2000, wb_group=model.name)
 
     fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(18, 5))
     ax[0].plot(psnrs)
