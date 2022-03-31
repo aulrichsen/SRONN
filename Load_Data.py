@@ -59,12 +59,8 @@ def get_pavia_data(res_ratio=2):
     #hsi =  scipy.io.loadmat('D:\HSI_SR_datasets\PaviaU.mat').get('paviaU') 
     hsi =  scipy.io.loadmat(PAVIA_DATA_DIR + '/PaviaU.mat').get('paviaU') 
 
-    print(hsi.shape)
-
     hsi = hsi_normalize_full(hsi)
-
     #hsi = np.float16(hsi)
-    print(hsi.dtype)
 
     images = torch.tensor(hsi)
 

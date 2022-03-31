@@ -162,9 +162,9 @@ def train(model, x_train, y_train, x_val, y_val, epochs=10000, lr=0.0001, lr_ste
         if (epoch + 1) % stats_disp == 0 or epoch == 0:
             
             new_best_msg = ""
-            if psnrs.index(max(psnrs)) >= len(psnrs) - stats_disp: new_best_msg += " | new best PSNR! " + str(round(max(psnrs, 3)))
-            if ssims.index(max(ssims)) >= len(ssims) - stats_disp: new_best_msg += " | new best SSIM! " + str(round(max(ssims, 3)))
-            if sams.index(min(sams)) >= len(sams) - stats_disp: new_best_msg += " | new best SAM! " + str(round(min(sams, 3)))
+            if psnrs.index(max(psnrs)) >= len(psnrs) - stats_disp: new_best_msg += " | new best PSNR! " + str(round(max(psnrs), 3))
+            if ssims.index(max(ssims)) >= len(ssims) - stats_disp: new_best_msg += " | new best SSIM! " + str(round(max(ssims), 3))
+            if sams.index(min(sams)) >= len(sams) - stats_disp: new_best_msg += " | new best SAM! " + str(round(min(sams), 3))
             
             print(epoch_summary + new_best_msg)
             metrics = {"train/train_loss": round(loss.item(),7),
