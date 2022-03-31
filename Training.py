@@ -160,7 +160,13 @@ def train(model, x_train, y_train, x_val, y_val, epochs=10000, lr=0.0001, lr_ste
         logging.info(epoch_summary)
 
         if (epoch + 1) % stats_disp == 0 or epoch == 0:
-            print(epoch_summary)
+            
+            new_best_msg = ""
+            if psnrs.index(max(psnrs)) >= len(psnrs) - stats_disp: new_best_msg += " | new best PSNR! " + str(round(max(psnrs, 3)))
+            if ssims.index(max(ssims)) >= len(ssims) - stats_disp: new_best_msg += " | new best SSIM! " + str(round(max(ssims, 3)))
+            if sams.index(min(sams)) >= len(sams) - stats_disp: new_best_msg += " | new best SAM! " + str(round(min(sams, 3)))
+            
+            print(epoch_summary + new_best_msg)
             metrics = {"train/train_loss": round(loss.item(),7),
                         "val/PSNR": round(val_psnr, 3),
                         "val/SSIM": round(val_ssim, 3),
@@ -197,9 +203,9 @@ if __name__ == '__main__':
 
     channels = x_train.shape[1]
 
-    #model = SRONN_L2(channels=channels).to(device)
+    model = SRONN_L2(channels=channels).to(device)
     #model = SRCNN(channels=channels).to(device)
-    model = SRONN(channels=channels).to(device)
+    #model = SRONN(channels=channels).to(device)
 
     psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=0.01, lr_step=2000, wb_group=model.name)
 
