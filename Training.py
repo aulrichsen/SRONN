@@ -203,11 +203,11 @@ if __name__ == '__main__':
 
     channels = x_train.shape[1]
 
-    model = SRONN_L2(channels=channels).to(device)
-    #model = SRCNN(channels=channels).to(device)
+    #model = SRONN_L2(channels=channels).to(device)
+    model = SRCNN(channels=channels).to(device)
     #model = SRONN(channels=channels).to(device)
 
-    psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=0.01, lr_step=2000, wb_group=model.name)
+    psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=0.000005, lr_step=1, wb_group=model.name)
 
     fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(18, 5))
     ax[0].plot(psnrs)

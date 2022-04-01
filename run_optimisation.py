@@ -34,14 +34,14 @@ def acquisition_function(hyperparameters, sample_save_file, model_type):
     else:
         currentSample = 1
         
-    lr, accum_iter = hyperparameters
-    lr, accum_iter = float(lr), int(accum_iter)  # convert from numpy types to normal types
+    lr, lr_step = hyperparameters
+    lr, lr_step = float(lr), int(lr_step)  # convert from numpy types to normal types
 
-    print(currentSample, [lr, accum_iter])
+    print(currentSample, [lr, lr_step])
 
     best_local_psnr = 0
 
-    for i in range(2):
+    for i in range(1):
         if model_type == "SRCNN":
             model = SRCNN(channels=channels).to(device)
         elif model_type == "SRONN":
@@ -53,7 +53,7 @@ def acquisition_function(hyperparameters, sample_save_file, model_type):
         else:
             assert False, "Invalid model_type"
 
-        psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, save_name=model_type, lr=0.0001, lr_step=10000, stats_disp=1000, best_vals=(global_best_psnr,1,0))    # Don't bother saving ssim and sam models
+        psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=lr, lr_step=lr_step, stats_disp=100, best_vals=(global_best_psnr,1,0), wb_group=model.name)    # Don't bother saving ssim and sam models
   
         best_train_psnr = max(psnrs)
 
@@ -64,7 +64,7 @@ def acquisition_function(hyperparameters, sample_save_file, model_type):
             best_ssims = ssims
             best_sams = sams
 
-    sample = {"Sample": currentSample, "X": [lr, accum_iter], "Best PSNR": best_local_psnr, "PSNRs": best_psnrs, "SSIMs": best_ssims, "SAMs": best_sams}
+    sample = {"Sample": currentSample, "X": [lr, lr_step], "Best PSNR": best_local_psnr, "PSNRs": best_psnrs, "SSIMs": best_ssims, "SAMs": best_sams}
     saveSample(sample, data_save_name=sample_save_file)
 
     print(f"Best iteration PSNR: {best_local_psnr} | Overall best PSNR: {global_best_psnr}")
@@ -99,13 +99,13 @@ if __name__ == '__main__':
                     base_estimator=gpr,
                     acq_func='EI',      # expected improvement
                     xi=0.01,            # exploitation-exploration trade-off
-                    n_calls=12,         # number of iterations
+                    n_calls=15,         # number of iterations
                     n_random_starts=5)  # initial samples are provided
 
-    optimize("SRCNN_model_samples.json")
+    optimize("SRCNN_model_samples.json", model_type="SRCNN")
 
-    optimize("SRONN_model_samples.json")
+    optimize("SRONN_model_samples.json", model_type="SRONN")
 
-    optimize("SRONN_BN_model_samples.json")
+    optimize("SRONN_L2_model_samples.json", model_type="SRONN_L2")
 
-    optimize("SRONN_BN_model_samples.json")
+    optimize("SRONN_BN_model_samples.json", model_type="SRONN_BN")

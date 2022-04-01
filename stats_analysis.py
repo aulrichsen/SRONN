@@ -49,6 +49,10 @@ if __name__ == '__main__':
         best_PSNRs.append(samp["Best PSNR"])
 
     print("Best PSNR on sample:", best_sample, "| PSNR:", samples[best_sample-1]["Best PSNR"])
+    print("Params:", samples[best_sample-1]["X"], samples[best_sample-1]["Sample"])
+
+    #for samp in samples:
+    #    print(samp["X"], samp["Best PSNR"])
 
     x = [i+1 for i in range(len(best_PSNRs))]
     plt.plot(x, best_PSNRs)
