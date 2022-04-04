@@ -53,7 +53,7 @@ def acquisition_function(hyperparameters, sample_save_file, model_type):
         else:
             assert False, "Invalid model_type"
 
-        psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=lr, lr_step=lr_step, stats_disp=100, best_vals=(global_best_psnr,1,0), wb_group=model.name)    # Don't bother saving ssim and sam models
+        psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=lr, lr_step=lr_step, epochs=2000, stats_disp=10, best_vals=(global_best_psnr,1,0), wb_group=model.name)    # Don't bother saving ssim and sam models
   
         best_train_psnr = max(psnrs)
 
@@ -82,8 +82,8 @@ if __name__ == '__main__':
     # Specifiy hyperparameter exploration ranges
     lrMin = 0.000000001     # Smallest learning rate
     lrMax = 0.01             # Largest learning rate
-    ssMin = 1            # Smallest step size
-    ssMax = 100             # Largest setp size
+    ssMin = 200            # Smallest step size
+    ssMax = 2000             # Largest setp size
     
     bounds = np.array([[lrMin, lrMax], [ssMin, ssMax]])
     print("Bounds:", bounds.shape)
@@ -102,7 +102,7 @@ if __name__ == '__main__':
                     n_calls=15,         # number of iterations
                     n_random_starts=5)  # initial samples are provided
 
-    optimize("SRCNN_model_samples.json", model_type="SRCNN")
+    #optimize("SRCNN_model_samples.json", model_type="SRCNN")
 
     optimize("SRONN_model_samples.json", model_type="SRONN")
 
