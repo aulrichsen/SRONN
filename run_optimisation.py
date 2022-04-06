@@ -15,22 +15,22 @@ from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
 from utils import *
 
 from Training import train
-from models import SRCNN, SRONN, SRONN_BN
+from models import SRCNN, SRONN, SRONN_BN, SRONN_L2
 from Load_Data import get_pavia_data
 
 
 def acquisition_function(hyperparameters, sample_save_file, model_type):
     """
-    optimise based on psnr
+    optimise based on ssim
     """
 
-    global_best_psnr = 0
+    global_best_ssim = 0
     samples = loadSamples(filename=sample_save_file)
     if samples: 
         currentSample = samples[-1]["Sample"] + 1
         for samp in samples:
-            if samp["Best PSNR"] > global_best_psnr:
-                global_best_psnr = samp["Best PSNR"]
+            if samp["Best SSIM"] > global_best_ssim:
+                global_best_ssim = samp["Best SSIM"]
     else:
         currentSample = 1
         
@@ -39,13 +39,15 @@ def acquisition_function(hyperparameters, sample_save_file, model_type):
 
     print(currentSample, [lr, lr_step])
 
-    best_local_psnr = 0
+    best_local_ssim = 0
 
     for i in range(1):
         if model_type == "SRCNN":
             model = SRCNN(channels=channels).to(device)
         elif model_type == "SRONN":
             model = SRONN(channels=channels).to(device)
+        elif model_type == "SRONN_L2":
+            model = SRONN_L2(channels=channels).to(device)
         elif model_type == "SRONN_BN":
             model = SRONN_BN(channels=channels).to(device)
         elif model_type == "SRONN_BN_Relu":
@@ -53,22 +55,22 @@ def acquisition_function(hyperparameters, sample_save_file, model_type):
         else:
             assert False, "Invalid model_type"
 
-        psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=lr, lr_step=lr_step, epochs=2000, stats_disp=10, best_vals=(global_best_psnr,1,0), wb_group=model.name)    # Don't bother saving ssim and sam models
+        psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, lr=lr, lr_step=lr_step, epochs=2000, stats_disp=10, best_vals=(100,global_best_ssim,0), wb_group=model.name)    # Don't bother saving ssim and sam models
   
-        best_train_psnr = max(psnrs)
+        best_train_ssim = max(ssims)
 
-        if best_train_psnr > best_local_psnr:
+        if best_train_ssim > best_local_ssim:
             # Use best sample iteration stats
-            best_local_psnr = best_train_psnr
+            best_local_ssim = best_train_ssim
             best_psnrs = psnrs
             best_ssims = ssims
             best_sams = sams
 
-    sample = {"Sample": currentSample, "X": [lr, lr_step], "Best PSNR": best_local_psnr, "PSNRs": best_psnrs, "SSIMs": best_ssims, "SAMs": best_sams}
+    sample = {"Sample": currentSample, "X": [lr, lr_step], "Best SSIM": best_local_ssim, "PSNRs": best_psnrs, "SSIMs": best_ssims, "SAMs": best_sams}
     saveSample(sample, data_save_name=sample_save_file)
 
-    print(f"Best iteration PSNR: {best_local_psnr} | Overall best PSNR: {global_best_psnr}")
-    return -best_local_psnr    # Negative for minimisation (actually want to maximise)    
+    print(f"Best iteration SSIM: {best_local_ssim} | Overall best SSIM: {global_best_ssim}")
+    return -best_local_ssim    # Negative for minimisation (actually want to maximise)    
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -88,6 +90,14 @@ if __name__ == '__main__':
     bounds = np.array([[lrMin, lrMax], [ssMin, ssMax]])
     print("Bounds:", bounds.shape)
 
+
+    n_its = 20
+    n_rand_its = 7
+    
+    with open('optimisation_info.txt', 'w') as f:
+            f.write(f'Bounds: {bounds}\n')
+            f.write(f'Iterations: {n_its}, random: {n_rand_its}')
+
     # === Regular Model Optimisation ===
     def optimize(sample_savefile, model_type):
         # Use custom kernel and estimator to match previous example
@@ -99,12 +109,12 @@ if __name__ == '__main__':
                     base_estimator=gpr,
                     acq_func='EI',      # expected improvement
                     xi=0.01,            # exploitation-exploration trade-off
-                    n_calls=15,         # number of iterations
-                    n_random_starts=5)  # initial samples are provided
+                    n_calls=n_its,         # number of iterations
+                    n_random_starts=n_rand_its)  # initial samples are provided
 
     #optimize("SRCNN_model_samples.json", model_type="SRCNN")
 
-    optimize("SRONN_model_samples.json", model_type="SRONN")
+    #optimize("SRONN_model_samples.json", model_type="SRONN")
 
     optimize("SRONN_L2_model_samples.json", model_type="SRONN_L2")
 
