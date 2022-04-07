@@ -5,6 +5,8 @@ import torch
 import torchvision
 import matplotlib.pyplot as plt
 from skimage.metrics import peak_signal_noise_ratio as psnr
+from skimage.metrics import structural_similarity as ssim
+from datetime import datetime
 
 from models import *
 from Load_Data import get_pavia_data
@@ -115,16 +117,11 @@ if __name__ == '__main__':
         if not os.path.isdir("images/"):
             os.mkdir("images")
 
-        save_dir = False
-        ext = ""
-        ext_count = 1
-        while not save_dir:
-            if not os.path.isdir("images/"+model_name+ext):
-                os.mkdir("images/"+model_name+ext)
-                save_dir = "images/"+model_name+ext
-                
-            ext_count += 1
-            ext = " " + str(ext_count)
+        now = datetime.now()
+        save_dir = "images/" + model_name + " " + now.strftime("%d/%m/%Y, %H:%M:%S")
+        if not os.path.isdir(save_dir):
+            os.mkdir("images/"+save_dir)
+            
 
         with open(save_dir+'/info.txt', 'w') as f:
             f.write('Average Test Metrics\n')
@@ -143,7 +140,8 @@ if __name__ == '__main__':
                 images = torch.stack([img, out, lab])
 
                 PSNR = psnr(lab.permute(1,2,0).cpu().detach().numpy(), out.permute(1,2,0).cpu().detach().numpy())
-                imshow(torchvision.utils.make_grid(images), title=save_dir+f"/Img {disp_img}, Slice {disp_chan}, PSNR {round(PSNR)}", plt_title=f"Low Res  | Model Output {round(PSNR, 2)} PSNR |   High Res")
+                SSIM = ssim(lab.permute(1,2,0).cpu().detach().numpy(), out.permute(1,2,0).cpu().detach().numpy())
+                imshow(torchvision.utils.make_grid(images), title=save_dir+f"/Img {disp_img}, Slice {disp_chan}, PSNR {round(PSNR)}", plt_title=f"Low Res  | Output {round(PSNR, 2)} PSNR, {round(SSIM, 2)} |   High Res")
 
 
 

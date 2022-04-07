@@ -16,6 +16,19 @@ test_ONN_learning:  creates random input and random (non-linear) target funtion 
 * 3) Train using standard pytorch training algorithm
     * Tutorial on how to do this with a CNN can be found here: https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 
+## Training Args ###
+ 
+--model:    Model to use for training.                          | Options: SRCNN, SRONN, SRONN_L2, SRONN_BN
+--dataset:  Dataset to train on.                                | Options: Pavia, Botswana
+--scale:    Super resolution scale factor.   
+--epochs:   Number of epochs to train for.
+--lr:       Starting training learning rate.
+--lr_ms:    Epochs at which to decrease learning rate by 10x.
+--opt:      Training optimizer to use.                          | Options: Adam
+--loss:     Training loss function to use.                      | Options: MSE
+--ms:       Number of epochs between logging and display.
+   
+
 ## General Concept behind Operator_Layer ##
 
 Uses MacLaurin series approximations to create learnable non-linear convolutional filters.
