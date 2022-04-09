@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import torch.nn as nn
 
-from Load_Data import get_pavia_data, bicubic_lr
+from Load_Data import get_data, bicubic_lr
 
 class Test_Load_Data(unittest.TestCase):
 
@@ -28,9 +28,9 @@ class Test_Load_Data(unittest.TestCase):
         Test if data produced by get_pavia_data function is reproducible
         """
 
-        x1_train, y1_train, x1_val, y1_val, x1_test, y1_test = get_pavia_data()
+        x1_train, y1_train, x1_val, y1_val, x1_test, y1_test, _ = get_data()
 
-        x2_train, y2_train, x2_val, y2_val, x2_test, y2_test = get_pavia_data()
+        x2_train, y2_train, x2_val, y2_val, x2_test, y2_test, _ = get_data()
 
         mse_loss = nn.MSELoss()     # MSE function to compare sperate instances of data are identical
 

@@ -6,73 +6,6 @@ from Self_ONN import Operator_Layer
 
 from fastonn import SelfONN2d
 
-class Single_Layer_Embedding_ONN(nn.Module):
-    def __init__(self, in_channels, out_channels, q_order=3, emb_out=512, ks=3, act=nn.Tanh()):
-        super(Single_Layer_Embedding_ONN, self).__init__()
-
-        self.operator = Operator_Layer(in_channels, out_channels, ks, q_order)
-        self.act = act  # Activation fiunction
-        self.avg_pool = nn.AvgPool2d((1,1))
-        self.embedding = nn.Linear(out_channels, emb_out)
-
-    def forward(self, x):
-        x = self.operator(x)
-        x = self.act(x)
-        x = self.avg_pool(x)
-        x = self.embedding(x)
-        x = nn.functional.normalize(x, p=2, dim=1)  # L2 norm
-        return x
-
-
-class Three_Layer_ONN(nn.Module):
-    def __init__(self, in_channels, out_channels, q_order=3, act=nn.Tanh()):
-        super(Three_Layer_ONN, self).__init__()
-
-        self.OP_layer_1 = SelfONN2d(in_channels, 64, 9, q=q_order, padding='same')
-        self.OP_layer_2 = SelfONN2d(64, 64, 3, q=q_order, padding='same')
-        self.OP_layer_3 = SelfONN2d(64, out_channels, 5, q=q_order, padding='same')
-        
-        self.act = act  # Activation fiunction
-
-    def forward(self, x):
-        x = self.OP_layer_1(x)
-        x = self.act(x)
-        x = self.OP_layer_2(x)
-        x = self.act(x)
-        x = self.OP_layer_3(x)
-        x = self.act(x)
-        return x
-
-class Three_Layer_ONN_BN(nn.Module):
-    def __init__(self, in_channels, out_channels, q_order=3, act=nn.Tanh()):
-        super(Three_Layer_ONN_BN, self).__init__()
-        """
-        Super Resolution Convolutional Neural Network (SRCNN)
-        First CCN architecture for super resolution
-        """
-
-        self.OP_layer_1 = SelfONN2d(in_channels, 64, 9, q=q_order, padding='same')
-        self.bn_1 = nn.BatchNorm2d(64)
-        self.OP_layer_2 = SelfONN2d(64, 64, 3, q=q_order, padding='same')
-        self.bn_2 = nn.BatchNorm2d(64)
-        self.OP_layer_3 = SelfONN2d(64, out_channels, 5, q=q_order, padding='same')
-        self.bn_3 = nn.BatchNorm2d(out_channels)
-        
-        self.act = act  # Activation fiunction
-
-    def forward(self, x):
-        x = self.OP_layer_1(x)
-        x = self.bn_1(x)
-        x = self.act(x)
-        x = self.OP_layer_2(x)
-        x = self.bn_2(x)
-        x = self.act(x)
-        x = self.OP_layer_3(x)
-        x = self.bn_3(x)
-        x = self.act(x)
-        return x
-
-
 class SRCNN(nn.Module):
     """
     One of the first super resolution models
@@ -119,6 +52,31 @@ class SRONN(nn.Module):
         x = self.tanh(self.op_2(x))
         x = self.op_3(x)
         return x
+
+
+class SRONN_AEP(nn.Module):
+    """
+    ONN Version of SRCNN with approximately the same number of parameters as SRCNN.
+    Hidden layer sizes of 32 and 16 (4x smaller than SRCNN), in fact has slightly less total parameters if default q val 3 used
+    """
+    def __init__(self, channels, q_order=3):
+        super(SRONN_AEP, self).__init__()
+        self.name = "SRONN_AEP"
+
+        self.op_1 = SelfONN2d(channels, 32, 9, q=q_order, padding='same')
+        self.op_2 = SelfONN2d(32, 16, 3, q=q_order, padding='same')
+        self.op_3 = SelfONN2d(16, channels, 5, q=q_order, padding='same')
+
+        self.tanh = nn.Tanh()
+
+        self.num_params = self.op_1.weight.numel() + self.op_1.bias.numel() + self.op_2.weight.numel() + self.op_2.bias.numel() + self.op_3.weight.numel() + self.op_3.bias.numel()
+
+    def forward(self, x):
+        x = self.tanh(self.op_1(x))
+        x = self.tanh(self.op_2(x))
+        x = self.op_3(x)
+        return x
+
 
 class SRONN_BN(nn.Module):
     """

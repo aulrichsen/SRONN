@@ -24,8 +24,6 @@ def hsi_normalize_full(hsi):
 def bicubic_lr(img, ratio):
     """
     Function to create Low Resolution images using Bicubic Interpolation
-    
-    ** Note ** - ask why INTER_CUBIC interpolation used to scale back up
     """
 
     if ratio == 2:
@@ -41,7 +39,7 @@ def bicubic_lr(img, ratio):
     img_up = cv2.resize(im_down, (w, h),interpolation=cv2.INTER_CUBIC)
     return img_up
 
-def get_pavia_data(dataset="Pavia", res_ratio=2):
+def get_data(dataset="Pavia", res_ratio=2):
 
     # Find directory for relevant computer
     PC_DIR = 'C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset'  # For my PC

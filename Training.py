@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import wandb
 from datetime import datetime
 
-from Load_Data import get_pavia_data
+from Load_Data import get_data
 
 from models import *
 
@@ -120,7 +120,7 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
     if opt.optimizer == "Adam":
         optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
     else:
-        assert False, "Invalid optimizer type."
+        assert False, "Invalid optimizer."
 
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, opt.lr_milestones)
 
@@ -136,19 +136,6 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
         config={"num_params": model.num_params}
     )
     wandb.config.update(opt)
-
-    """        
-        config={
-            "model": model.name,
-            "epochs": epochs,
-            "lr": lr,
-            "lr_milestones": lr_milestones,
-            "optimizer": opt_name,
-            "loss_function": lf_name,
-            "metrics_step": stats_disp
-        }
-
-    """
 
 
     now = datetime.now()
@@ -173,7 +160,8 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
         optimizer.zero_grad()
         scheduler.step()    # Reduce lr on every lr_step epochs
         
-        val_psnr, val_ssim, val_sam = eval(model, x_val, y_val, log_img=True)
+        log_img = (epoch + 1) % 200 == 0 or epoch     # Only save images to wandb every 200 epcohs (speeds up sync)
+        val_psnr, val_ssim, val_sam = eval(model, x_val, y_val, log_img=log_img)
         psnrs.append(val_psnr)
         ssims.append(val_ssim)
         sams.append(val_sam)
@@ -296,7 +284,7 @@ if __name__ == '__main__':
 
     opt = parse_train_opt()
 
-    x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_pavia_data(dataset=opt.dataset, res_ratio=opt.scale)
+    x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale)
     x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
 
     channels = x_train.shape[1]
@@ -305,7 +293,9 @@ if __name__ == '__main__':
         model = SRCNN(channels=channels).to(device)
     elif opt.model == "SRONN":
         model = SRONN(channels=channels).to(device)
-    elif opt.mode == "SRONN_L2":
+    elif opt.model == "SRONN_AEP":
+        model = SRONN_AEP(channels=channels).to(device)
+    elif opt.model == "SRONN_L2":
         model = SRONN_L2(channels=channels).to(device)
     elif opt.model == "SRONN_BN":
         model = SRONN_BN(channels=channels).to(device)

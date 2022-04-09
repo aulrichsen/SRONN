@@ -9,7 +9,7 @@ from skimage.metrics import structural_similarity as ssim
 from datetime import datetime
 
 from models import *
-from Load_Data import get_pavia_data
+from Load_Data import get_data
 from Training import eval
 from utils import loadSamples, imshow
 
@@ -82,13 +82,10 @@ if __name__ == '__main__':
 
 
     if opt.save_imgs:
-        _, _, _, _, test_X, test_Y = get_pavia_data()
+        _, _, _, _, test_X, test_Y, _ = get_data()
         channels = test_X.shape[1]
-
-        if "test" in opt.model_file:
-            model_name = "Three_Layer_ONN"
-            model = Three_Layer_ONN(in_channels=channels, out_channels=channels)
-        elif "SRONN_BN" in opt.model_file:
+        
+        if "SRONN_BN" in opt.model_file:
             model_name = "SRONN_BN"
             model = SRONN_BN(channels=channels)
         elif "SRONN" in opt.model_file:
@@ -118,9 +115,9 @@ if __name__ == '__main__':
             os.mkdir("images")
 
         now = datetime.now()
-        save_dir = "images/" + model_name + " " + now.strftime("%d/%m/%Y, %H:%M:%S")
+        save_dir = "images/" + model_name + " " + now.strftime("%d_%m_%Y, %H_%M_%S")
         if not os.path.isdir(save_dir):
-            os.mkdir("images/"+save_dir)
+            os.mkdir(save_dir)
             
 
         with open(save_dir+'/info.txt', 'w') as f:
