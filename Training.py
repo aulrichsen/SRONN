@@ -119,6 +119,8 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
 
     if opt.optimizer == "Adam":
         optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
+    elif opt.optimizer == "SGD":
+        optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9)
     else:
         assert False, "Invalid optimizer."
 
@@ -156,19 +158,21 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
         loss = lossFunction(output, y_train)  
         loss.backward()
     
+        for param_group in optimizer.param_groups:
+            current_lr = param_group['lr']
+            break
+
+        if opt.grad_clip: nn.utils.clip_grad_norm_(model.parameters(), opt.clip_val/current_lr)
+
         optimizer.step()
         optimizer.zero_grad()
         scheduler.step()    # Reduce lr on every lr_step epochs
         
-        log_img = (epoch + 1) % 200 == 0 or epoch     # Only save images to wandb every 200 epcohs (speeds up sync)
+        log_img = (epoch + 1) % 200 == 0        # Only save images to wandb every 200 epcohs (speeds up sync)
         val_psnr, val_ssim, val_sam = eval(model, x_val, y_val, log_img=log_img)
         psnrs.append(val_psnr)
         ssims.append(val_ssim)
         sams.append(val_sam)
-        
-        for param_group in optimizer.param_groups:
-            current_lr = param_group['lr']
-            break
 
         epoch_summary = f"Epoch: {epoch+1} | Loss: {round(loss.item(), 7)} | PSNR: {round(val_psnr, 3)} | SSIM: {round(val_ssim, 3)} | SAM: {round(val_sam, 3)} | LR: {current_lr} | Epoch time: {round(time.time() - start_time, 2)}s"
         logging.info(epoch_summary)
@@ -265,6 +269,7 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
 def parse_train_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default="SRONN", help='Model to use for training.')
+    parser.add_argument('--q', type=int, default=3, help='q order of model. (for CNN is 1).')
     parser.add_argument('--dataset', type=str, default="Pavia", help="Dataset to train on.")
     parser.add_argument('--scale', type=int, default=2, help="Super resolution scale factor.")
     parser.add_argument('--epochs', type=int, default=10000, help="Number of epochs to train for.")
@@ -273,10 +278,22 @@ def parse_train_opt():
     parser.add_argument('--opt', dest="optimizer", type=str, default="Adam", help="Training optimizer to use.")
     parser.add_argument('--loss', dest="loss_function", type=str, default="MSE", help="Training loss function to use.")
     parser.add_argument('--ms', dest="metrics_step", type=int, default=10, help="Number of epochs between logging and display.")
-    
+    parser.add_argument('--clip', dest="grad_clip", action='store_true', help='Apply gradient clipping.')
+    parser.add_argument('--clip_val', type=float, default=1, help='Gradient clipping parameter (Only applied if --clip set).')
+    parser.add_argument('--trans', dest="weight_transfer", action='store_true', help='Transfer weights from SRCNN model.')
+
     opt = parser.parse_args()
 
     return opt
+
+def get_ONN_weights(cnn_layer, onn_layer):
+    onn_weight_shape = onn_layer.weight.shape
+
+    w = torch.zeros(onn_weight_shape)
+    cs = cnn_layer.weight.shape
+    w[:cs[0], :cs[1], :cs[2], :cs[3]] = cnn_layer.weight
+
+    return nn.Parameter(w)
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -291,16 +308,36 @@ if __name__ == '__main__':
 
     if opt.model == "SRCNN":
         model = SRCNN(channels=channels).to(device)
+        opt.q = 1
+        opt.weight_transfer = False
     elif opt.model == "SRONN":
-        model = SRONN(channels=channels).to(device)
+        model = SRONN(channels=channels, q=opt.q).to(device)
     elif opt.model == "SRONN_AEP":
-        model = SRONN_AEP(channels=channels).to(device)
+        model = SRONN_AEP(channels=channels, q=opt.q).to(device)
+        opt.weight_transfer = False
+    elif opt.model == "SRONN_AEP_residual":
+        model = SRONN_AEP(channels=channels, q=opt.q, is_residual=True).to(device)
+        opt.weight_transfer = False
     elif opt.model == "SRONN_L2":
-        model = SRONN_L2(channels=channels).to(device)
+        model = SRONN_L2(channels=channels, q=opt.q).to(device)
     elif opt.model == "SRONN_BN":
-        model = SRONN_BN(channels=channels).to(device)
+        model = SRONN_BN(channels=channels, q=opt.q).to(device)
     else:
         assert False, "Invalid model type."
         
+    if opt.weight_transfer:
+        srcnn = SRCNN(channels=channels).to(device)
+        srcnn.load_state_dict(torch.load("SRCNN_best_SSIM.pth.tar"))
+        #srcnn.to(device)
+
+        model.op_1.weight = get_ONN_weights(srcnn.conv_1, model.op_1)
+        model.op_1.bias = srcnn.conv_1.bias
+        model.op_2.weight = get_ONN_weights(srcnn.conv_2, model.op_2)
+        model.op_2.bias = srcnn.conv_2.bias
+        model.op_3.weight = get_ONN_weights(srcnn.conv_3, model.op_3)
+        model.op_3.bias = srcnn.conv_3.bias
+
+        model.to(device)
+
     psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, opt, jt=dataset_name)
 

@@ -71,15 +71,11 @@ def get_data(dataset="Pavia", res_ratio=2):
 
     images = images.permute(2,1,0)
     images = images.unsqueeze(1)
-    print(images.shape)
+
     max_val = torch.max(images)
     min_val = torch.min(images)
-    print("Max:", max_val)
-    print("Min:", min_val)
-
-    #images = images[30:40]
-
-    #imshow(torchvision.utils.make_grid(images))
+    #print("Max:", max_val)
+    #print("Min:", min_val)
 
     # get image tiles (64x64 sub images of original hsi cube)
     hr_tiles = []
@@ -93,11 +89,6 @@ def get_data(dataset="Pavia", res_ratio=2):
     hr_tiles_nor = []
     for hr_tile in hr_tiles:
         hr_tiles_nor.append(hsi_normalize_full(hr_tile))
-        
-    print(len(hr_tiles))
-    print(hr_tiles_nor[0].shape)
-    print(type(hr_tiles_nor[0]))
-    print(hr_tiles[-1].shape)
 
 
     # Create Low resolution tiles
