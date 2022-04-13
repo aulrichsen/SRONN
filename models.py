@@ -10,9 +10,11 @@ class SRCNN(nn.Module):
     """
     One of the first super resolution models
     """
-    def __init__(self, channels):
+    def __init__(self, channels, is_residual=False):
         super(SRCNN, self).__init__()
         self.name = "SRCNN"
+        if is_residual: self.name += "_residual"
+        self.is_residual = is_residual
 
         self.conv_1 = nn.Conv2d(channels, 128, kernel_size=9, padding='same') # Saye valid padding in SRCNN repo ...
         nn.init.xavier_uniform_(self.conv_1.weight)  # Init with golrot uniform weights
@@ -26,18 +28,23 @@ class SRCNN(nn.Module):
         self.num_params = self.conv_1.weight.numel() + self.conv_1.bias.numel() + self.conv_2.weight.numel() + self.conv_2.bias.numel() + self.conv_3.weight.numel() + self.conv_3.bias.numel()
 
     def forward(self, x):
-        x = self.relu(self.conv_1(x))
-        x = self.relu(self.conv_2(x))
-        x = self.conv_3(x)
-        return x
+        out = self.relu(self.conv_1(x))
+        out = self.relu(self.conv_2(out))
+        out = self.conv_3(out)
+
+        if self.is_residual: out = torch.add(out, x)
+
+        return out
 
 class SRONN(nn.Module):
     """
     ONN Version of SRCNN
     """
-    def __init__(self, channels, q=3):
+    def __init__(self, channels, q=3, is_residual=False):
         super(SRONN, self).__init__()
         self.name = "SRONN"
+        if is_residual: self.name += "_residual"
+        self.is_residual = is_residual
 
         self.op_1 = SelfONN2d(channels, 128, 9, q=q, padding='same')
         self.op_2 = SelfONN2d(128, 64, 3, q=q, padding='same')
@@ -48,10 +55,13 @@ class SRONN(nn.Module):
         self.num_params = self.op_1.weight.numel() + self.op_1.bias.numel() + self.op_2.weight.numel() + self.op_2.bias.numel() + self.op_3.weight.numel() + self.op_3.bias.numel()
 
     def forward(self, x):
-        x = self.tanh(self.op_1(x))
-        x = self.tanh(self.op_2(x))
-        x = self.op_3(x)
-        return x
+        out = self.tanh(self.op_1(x))
+        out = self.tanh(self.op_2(out))
+        out = self.op_3(out)
+
+        if self.is_residual: out = torch.add(out, x)
+
+        return out
 
 
 class SRONN_AEP(nn.Module):
@@ -87,9 +97,11 @@ class SRONN_BN(nn.Module):
     """
     ONN Version of SRCNN with Batch Normalisation
     """
-    def __init__(self, channels, q=3, act=nn.Tanh()):
+    def __init__(self, channels, q=3, act=nn.Tanh(), is_residual=False):
         super(SRONN_BN, self).__init__()
         self.name = "SRONN_BN"
+        if is_residual: self.name += "_residual"
+        self.is_residual = is_residual
 
         self.op_1 = SelfONN2d(channels, 128, 9, q=q, padding='same')
         self.bn_1 = nn.BatchNorm2d(128)
@@ -105,6 +117,9 @@ class SRONN_BN(nn.Module):
         x = self.act(self.bn_1(self.op_1(x)))
         x = self.act(self.bn_2(self.op_2(x)))
         x = self.op_3(x)
+
+        if self.is_residual: out = torch.add(out, x)
+
         return x
 
 class SRONN_L2(nn.Module):

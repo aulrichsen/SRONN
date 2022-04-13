@@ -281,6 +281,7 @@ def parse_train_opt():
     parser.add_argument('--clip', dest="grad_clip", action='store_true', help='Apply gradient clipping.')
     parser.add_argument('--clip_val', type=float, default=1, help='Gradient clipping parameter (Only applied if --clip set).')
     parser.add_argument('--trans', dest="weight_transfer", action='store_true', help='Transfer weights from SRCNN model.')
+    parser.add_argument('--checkpoint', type=str, default="", help='Weight checkpoint to begin training with.')
 
     opt = parser.parse_args()
 
@@ -312,6 +313,8 @@ if __name__ == '__main__':
         opt.weight_transfer = False
     elif opt.model == "SRONN":
         model = SRONN(channels=channels, q=opt.q).to(device)
+    elif opt.model == "SRONN_residual":
+        model = SRONN(channels=channels, q=opt.q, is_residual=True).to(device)
     elif opt.model == "SRONN_AEP":
         model = SRONN_AEP(channels=channels, q=opt.q).to(device)
         opt.weight_transfer = False
@@ -337,6 +340,10 @@ if __name__ == '__main__':
         model.op_3.weight = get_ONN_weights(srcnn.conv_3, model.op_3)
         model.op_3.bias = srcnn.conv_3.bias
 
+        model.to(device)
+
+    if opt.checkpoint:
+        model.load_state_dict(torch.load(opt.checkpoint))
         model.to(device)
 
     psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, opt, jt=dataset_name)

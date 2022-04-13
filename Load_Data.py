@@ -39,7 +39,7 @@ def bicubic_lr(img, ratio):
     img_up = cv2.resize(im_down, (w, h),interpolation=cv2.INTER_CUBIC)
     return img_up
 
-def get_data(dataset="Pavia", res_ratio=2):
+def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[]):
 
     # Find directory for relevant computer
     PC_DIR = 'C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset'  # For my PC
@@ -66,6 +66,16 @@ def get_data(dataset="Pavia", res_ratio=2):
 
     hsi = hsi_normalize_full(hsi)
     #hsi = np.float16(hsi)
+
+    # ** Remove bands here **
+    if bands_to_remove:
+        bands_to_remove = [c if c >= 0 else hsi.shape[2]+c for c in bands_to_remove]    # Make any negative indexes their positive equivalent
+        bands_to_remove.sort()
+        bands_to_keep = [*range(hsi.shape[2])]
+        for c in reversed(bands_to_remove):
+            bands_to_keep.pop(c)
+
+        hsi = hsi[:, :, bands_to_keep]
 
     images = torch.tensor(hsi)
 
@@ -121,5 +131,16 @@ def get_data(dataset="Pavia", res_ratio=2):
     x_test = torch.from_numpy(x_test)
     y_test = torch.from_numpy(y_test)
 
-    dataset_name += str(res_ratio)
+    band_rm_str = ""
+    if bands_to_remove:
+        band_rm_str = " - "+ ', '.join(str(c) for c in bands_to_remove)
+
+    dataset_name += str(res_ratio) + band_rm_str
     return x_train, y_train, x_val, y_val, x_test, y_test, dataset_name
+
+
+if __name__ == "__main__":
+
+    test = get_data(bands_to_remove=[0,1,-2,-1])
+
+    print(test[-1])

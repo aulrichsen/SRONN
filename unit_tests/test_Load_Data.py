@@ -41,3 +41,25 @@ class Test_Load_Data(unittest.TestCase):
         self.assertEqual(mse_loss(x1_test, x2_test), 0, msg="x_train not reproducible.")
         self.assertEqual(mse_loss(y1_test, y2_test), 0, msg="x_train not reproducible.")
 
+
+    def test_band_removal(self):
+        """
+        test that band removal from dataset works correctly
+        """
+
+        tolerance = 0.0001  # mse tolerance value, since band removal will affect normalisation
+
+        bands_to_remove = [0,1,2,-3,-2,-1]
+
+        x1_train, y1_train, x1_val, y1_val, x1_test, y1_test, _ = get_data(bands_to_remove=bands_to_remove)
+
+        x2_train, y2_train, x2_val, y2_val, x2_test, y2_test, _ = get_data()
+
+        mse_loss = nn.MSELoss()     # MSE function to compare sperate instances of data are identical
+
+        self.assertLess(mse_loss(x1_train, x2_train[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
+        self.assertLess(mse_loss(y1_train, y2_train[:, 3:-3, :, :]), tolerance, msg="y_train bands not removed correctly.")
+        self.assertLess(mse_loss(x1_val, x2_val[:, 3:-3, :, :]), tolerance, msg="x_val bands not removed correctly.")
+        self.assertLess(mse_loss(y1_val, y2_val[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
+        self.assertLess(mse_loss(x1_test, x2_test[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
+        self.assertLess(mse_loss(y1_test, y2_test[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
