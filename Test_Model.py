@@ -37,6 +37,8 @@ if __name__ == "__main__":
         model = SRONN_BN(channels=channels)
     elif "SRONN_AEP" in opt.model_file:
         model = SRONN_AEP(channels=channels)
+    elif "SRONN_residual" in opt.model_file:
+        model = SRONN(channels=channels, is_residual=True)
     elif "SRONN" in opt.model_file:
         model = SRONN(channels=channels)
     elif "SRCNN" in opt.model_file:

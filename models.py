@@ -40,9 +40,11 @@ class SRONN(nn.Module):
     """
     ONN Version of SRCNN
     """
-    def __init__(self, channels, q=3, is_residual=False):
+    def __init__(self, channels, q=3, is_sig=False, is_residual=False):
         super(SRONN, self).__init__()
         self.name = "SRONN"
+        if is_sig: self.name += "_sigmoid"
+        self.is_sig = is_sig
         if is_residual: self.name += "_residual"
         self.is_residual = is_residual
 
@@ -51,6 +53,7 @@ class SRONN(nn.Module):
         self.op_3 = SelfONN2d(64, channels, 5, q=q, padding='same')
 
         self.tanh = nn.Tanh()
+        self.sig = nn.Sigmoid()
 
         self.num_params = self.op_1.weight.numel() + self.op_1.bias.numel() + self.op_2.weight.numel() + self.op_2.bias.numel() + self.op_3.weight.numel() + self.op_3.bias.numel()
 
@@ -60,6 +63,8 @@ class SRONN(nn.Module):
         out = self.op_3(out)
 
         if self.is_residual: out = torch.add(out, x)
+
+        if self.is_sig: out = self.sig(out)
 
         return out
 
@@ -91,6 +96,36 @@ class SRONN_AEP(nn.Module):
         if self.is_residual: out = torch.add(out, x)
 
         return out
+
+
+class WRF_ONN(nn.Module):
+    """
+    ONN Version of SRCNN with approximately the same number of parameters as SRCNN.
+    Hidden layer sizes of 32 and 16 (4x smaller than SRCNN), in fact has slightly less total parameters if default q val 3 used
+    """
+    def __init__(self, channels, q=3, is_residual=False):
+        super(WRF_ONN, self).__init__()
+        self.name = "WRF_ONN"
+        if is_residual: self.name += "_residual"
+        self.is_residual = is_residual
+
+        self.op_1 = SelfONN2d(channels, 32, 19, q=q, padding='same')
+        self.op_2 = SelfONN2d(32, 16, 7, q=q, padding='same')
+        self.op_3 = SelfONN2d(16, channels, 11, q=q, padding='same')
+
+        self.tanh = nn.Tanh()
+
+        self.num_params = self.op_1.weight.numel() + self.op_1.bias.numel() + self.op_2.weight.numel() + self.op_2.bias.numel() + self.op_3.weight.numel() + self.op_3.bias.numel()
+
+    def forward(self, x):
+        out = self.tanh(self.op_1(x))
+        out = self.tanh(self.op_2(out))
+        out = self.op_3(out)
+
+        if self.is_residual: out = torch.add(out, x)
+
+        return out
+
 
 
 class SRONN_BN(nn.Module):

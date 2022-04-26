@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import wandb
 from datetime import datetime
 
+from fastonn.utils.adam import Adam
+
 from Load_Data import get_data
 
 from models import *
@@ -121,6 +123,10 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
         optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
     elif opt.optimizer == "SGD":
         optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9)
+    elif opt.optimizer == "RMSProp":
+        optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr, alpha=0.99)
+    elif opt.optimizer == "FO_Adam":
+        optimizer = Adam(model.parameters(), lr=opt.lr)
     else:
         assert False, "Invalid optimizer."
 
@@ -311,10 +317,16 @@ if __name__ == '__main__':
         model = SRCNN(channels=channels).to(device)
         opt.q = 1
         opt.weight_transfer = False
+    if opt.model == "SRCNN_residual":
+        model = SRCNN(channels=channels, is_residual=True).to(device)
+        opt.q = 1
+        opt.weight_transfer = False
     elif opt.model == "SRONN":
         model = SRONN(channels=channels, q=opt.q).to(device)
     elif opt.model == "SRONN_residual":
         model = SRONN(channels=channels, q=opt.q, is_residual=True).to(device)
+    elif opt.model == "SRONN_sigmoid_residual":
+        model = SRONN(channels=channels, q=opt.q, is_sig=True, is_residual=True).to(device)
     elif opt.model == "SRONN_AEP":
         model = SRONN_AEP(channels=channels, q=opt.q).to(device)
         opt.weight_transfer = False
@@ -325,6 +337,10 @@ if __name__ == '__main__':
         model = SRONN_L2(channels=channels, q=opt.q).to(device)
     elif opt.model == "SRONN_BN":
         model = SRONN_BN(channels=channels, q=opt.q).to(device)
+    elif opt.model == "WRF_ONN":
+        model = WRF_ONN(channels=channels, q=opt.q).to(device)
+    elif opt.model == "WRF_ONN_residual":
+        model = WRF_ONN(channels=channels, q=opt.q, is_residual=True).to(device)
     else:
         assert False, "Invalid model type."
         

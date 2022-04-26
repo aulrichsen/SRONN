@@ -95,21 +95,22 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[]):
         for j in range(TILES.shape[1]):          
             hr_tiles.append(np.squeeze(TILES[i,j,:,:,:,:], axis = (0,)))
 
+    """
     # Normalize each tile
     hr_tiles_nor = []
     for hr_tile in hr_tiles:
         hr_tiles_nor.append(hsi_normalize_full(hr_tile))
-
+    """
 
     # Create Low resolution tiles
     lr_tiles = []
-    for hr_tile_nor in hr_tiles_nor:
+    for hr_tile_nor in hr_tiles:
         #print("Processing tile # " , i)
         lr_tiles.append(bicubic_lr(hr_tile_nor, res_ratio))
 
 
     X = np.array(lr_tiles)
-    Y = np.array(hr_tiles_nor)
+    Y = np.array(hr_tiles)
     X = np.moveaxis(X, -1, 1)
     Y = np.moveaxis(Y, -1, 1)
     X = np.float32(X)
