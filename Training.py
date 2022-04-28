@@ -305,6 +305,7 @@ def parse_train_opt():
     parser.add_argument('--clip_val', type=float, default=1, help='Gradient clipping parameter (Only applied if --clip set).')
     parser.add_argument('--trans', dest="weight_transfer", action='store_true', help='Transfer weights from SRCNN model.')
     parser.add_argument('--checkpoint', type=str, default="", help='Weight checkpoint to begin training with.')
+    parser.add_argument('--SR_kernel', action='store_true', help='Use KernelGAN downsampling.')
 
     opt = parser.parse_args()
 
@@ -325,7 +326,7 @@ if __name__ == '__main__':
 
     opt = parse_train_opt()
 
-    x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale)
+    x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
     x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
 
     bs=4
