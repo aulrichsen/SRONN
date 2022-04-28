@@ -4,11 +4,13 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 import scipy.io
+from scipy.ndimage import filters
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split
 import cv2
 from patchify import patchify
+
 
 
 def imshow(img):
@@ -40,7 +42,7 @@ def bicubic_lr(img, ratio):
     img_up = cv2.resize(im_down, (w, h),interpolation=cv2.INTER_CUBIC)
     return img_up
 
-def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[]):
+def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
 
     # Find directory for relevant computer
     PC_DIR = 'C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset'  # For my PC
@@ -105,9 +107,17 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[]):
 
     # Create Low resolution tiles
     lr_tiles = []
-    for hr_tile_nor in hr_tiles:
-        #print("Processing tile # " , i)
-        lr_tiles.append(bicubic_lr(hr_tile_nor, res_ratio))
+    if SR_kernel:
+        kernel = scipy.io.loadmat("LR_Kernels/PaviaU_kernel_x2.mat")
+        for hr_tile_norm in hr_tiles:
+            im_down = imresize(hr_tile_norm, scale_factor=1/res_ratio, kernel=kernel['Kernel'])
+            w, h, c = hr_tile_norm.shape
+            img_up = cv2.resize(im_down, (w, h), interpolation=cv2.INTER_CUBIC)
+            lr_tiles.append(img_up)
+    else:
+        for hr_tile_norm in hr_tiles:
+            #print("Processing tile # " , i)
+            lr_tiles.append(bicubic_lr(hr_tile_norm, res_ratio))
 
 
     X = np.array(lr_tiles)
@@ -153,8 +163,30 @@ class HSI_Dataset(Dataset):
     def __getitem__(self, idx):
         return self.X[idx], self.Y[idx]
 
+
+def imresize(im, scale_factor, kernel):
+    # First standardize values and fill missing arguments (if needed) by deriving scale from output shape or vice versa
+    #scale_factor, output_shape = fix_scale_and_size(im.shape, output_shape, scale_factor)
+    scale_factor = [scale_factor, scale_factor, 1]  # scale x and y but not c
+
+    output_shape = [int(im.shape[0] / scale_factor[0]), int(im.shape[1] / scale_factor[1]), im.shape[2]]
+
+    return numeric_kernel(im, kernel, scale_factor, output_shape)
+
+def numeric_kernel(im, kernel, scale_factor, output_shape):
+   
+    # First run a correlation (convolution with flipped kernel)
+    out_im = np.zeros_like(im)
+    for channel in range(im.shape[2]):
+        out_im[:, :, channel] = filters.correlate(im[:, :, channel], kernel)
+
+    # Then subsample and return
+    return out_im[np.round(np.linspace(0, im.shape[0] - 1 / scale_factor[0], output_shape[0])).astype(int)[:, None],
+           np.round(np.linspace(0, im.shape[1] - 1 / scale_factor[1], output_shape[1])).astype(int), :]
+
+
 if __name__ == "__main__":
 
-    test = get_data(bands_to_remove=[0,1,-2,-1])
+    test = get_data(SR_kernel=True)
 
     print(test[-1])
