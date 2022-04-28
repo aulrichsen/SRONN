@@ -4,12 +4,13 @@ from datetime import datetime
 
 import cv2
 import torch
+from torch.utils.data import DataLoader
 import torchvision
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 
 from models import *
-from Load_Data import get_data
+from Load_Data import get_data, HSI_Dataset
 from Training import eval
 from utils import imshow
 
@@ -35,12 +36,16 @@ if __name__ == "__main__":
 
     if "SRONN_BN" in opt.model_file:
         model = SRONN_BN(channels=channels)
+    elif "SRONN_AEP_residual" in opt.model_file:
+        model = SRONN_AEP(channels=channels, is_residual=True)
     elif "SRONN_AEP" in opt.model_file:
         model = SRONN_AEP(channels=channels)
     elif "SRONN_residual" in opt.model_file:
         model = SRONN(channels=channels, is_residual=True)
     elif "SRONN" in opt.model_file:
         model = SRONN(channels=channels)
+    elif "SRCNN_residual" in opt.model_file:
+        model = SRCNN(channels=channels, is_residual=True)
     elif "SRCNN" in opt.model_file:
         model = SRCNN(channels=channels)
     else:
@@ -51,12 +56,16 @@ if __name__ == "__main__":
 
     test_X = test_X.to(device)
     test_Y = test_Y.to(device)
+    
+    bs= 4
+    test_data = HSI_Dataset(test_X, test_Y)
+    test_dl = DataLoader(test_data, batch_size=bs, shuffle=False)
 
     model.load_state_dict(torch.load(opt.model_file, map_location=torch.device(device)))
     model.to(device)
     model.eval()
 
-    _psnr, _ssim, _sam = eval(model, test_X, test_Y)
+    _psnr, _ssim, _sam = eval(model, test_dl)
     metric_info = f"PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
     print(metric_info)
 
@@ -76,7 +85,12 @@ if __name__ == "__main__":
         f.write(metric_info)
 
     with torch.no_grad(): 
-        output = model(test_X)
+        output = []
+        for x_test, y_test in iter(test_dl):
+            output.append(model(x_test))
+            
+        output = torch.cat(output, dim=0)
+        
 
     for disp_img in range(test_X.shape[0]):
         for disp_chan in range(disp_img, test_X.shape[1], 10):

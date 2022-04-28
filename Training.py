@@ -5,6 +5,7 @@ import time
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
@@ -14,7 +15,7 @@ from datetime import datetime
 
 from fastonn.utils.adam import Adam
 
-from Load_Data import get_data
+from Load_Data import get_data, HSI_Dataset
 
 from models import *
 
@@ -28,7 +29,7 @@ Draw.io for figures!
 """
 
 
-def eval(model, X, Y, disp_imgs=False, log_img=False, table_type="validation"):
+def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation"):
     """
     Get performance metrics
     PSNR: Peak Signal to Noise Ratio (higher the better); Spatial quality metric
@@ -48,9 +49,18 @@ def eval(model, X, Y, disp_imgs=False, log_img=False, table_type="validation"):
         table = wandb.Table(columns=["low res", "pred", "high res", "PSNR", "SSIM"])
     
     with torch.no_grad():
-        predicted_output = model(X)
+        predicted_output = []
+        X, Y = [], []
+        for x_val, y_val in iter(val_dl):
+            predicted_output.append(model(x_val))
+            X.append(x_val)
+            Y.append(y_val)
+        predicted_output = torch.cat(predicted_output, dim=0)
+        X = torch.cat(X, dim=0)
+        Y = torch.cat(Y, dim=0)
+
     test_size = predicted_output.size()[0]
-    for i in range (0,test_size):
+    for i in range (0, test_size):
         predicted_output = torch.clamp(predicted_output, min=0, max=1) # Clip values above 1 and below 0
 
         predict = predicted_output.cpu()[i,:,:,:]
@@ -89,7 +99,7 @@ def eval(model, X, Y, disp_imgs=False, log_img=False, table_type="validation"):
 
     return avg_psnr, avg_ssim, avg_sam
 
-def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=None):
+def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     """
     train a model for HSI super resolution
 
@@ -159,23 +169,30 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
         start_time = time.time()
         
         model.train()
-
-        output = model(x_train)
-        loss = lossFunction(output, y_train)  
-        loss.backward()
     
         for param_group in optimizer.param_groups:
             current_lr = param_group['lr']
             break
 
-        if opt.grad_clip: nn.utils.clip_grad_norm_(model.parameters(), opt.clip_val/current_lr)
+        total_loss = []
+        for x_train, y_train in iter(train_dl):
+            output = model(x_train)
+            #print(x_train.shape, output.shape, y_train.shape)
+            loss = lossFunction(output, y_train)  
+            total_loss.append(loss)
+            loss.backward()
 
-        optimizer.step()
-        optimizer.zero_grad()
+            if opt.grad_clip: nn.utils.clip_grad_norm_(model.parameters(), opt.clip_val/current_lr)
+
+            optimizer.step()
+            optimizer.zero_grad()
+        
         scheduler.step()    # Reduce lr on every lr_step epochs
         
+        loss = sum(total_loss)/len(total_loss)  # get average loss for the epoch for display
+
         log_img = (epoch + 1) % 200 == 0        # Only save images to wandb every 200 epcohs (speeds up sync)
-        val_psnr, val_ssim, val_sam = eval(model, x_val, y_val, log_img=log_img)
+        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=log_img)
         psnrs.append(val_psnr)
         ssims.append(val_ssim)
         sams.append(val_sam)
@@ -236,7 +253,7 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
 
     # Test best SAM model
     model.load_state_dict(torch.load(model.name+"_best_SAM.pth.tar"))
-    _psnr, _ssim, _sam = eval(model, x_test, y_test)
+    _psnr, _ssim, _sam = eval(model, test_dl)
     stats_msg = f"best SAM model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
     print(stats_msg)
     with open('training_info.txt', 'a') as f:
@@ -244,7 +261,7 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
 
     # Test best PSNR model
     model.load_state_dict(torch.load(model.name+"_best_PSNR.pth.tar"))
-    _psnr, _ssim, _sam = eval(model, x_test, y_test, disp_imgs="Best PSNR Out Image")
+    _psnr, _ssim, _sam = eval(model, test_dl, disp_imgs="Best PSNR Out Image")
     stats_msg = f"best PSNR model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
     print(stats_msg)
     with open('training_info.txt', 'a') as f:
@@ -253,7 +270,7 @@ def train(model, x_train, y_train, x_val, y_val, opt, best_vals=(0,0,1000), jt=N
     # Test best SSIM model
     # Use best SSIM  model for wandb test metrics 
     model.load_state_dict(torch.load(model.name+"_best_SSIM.pth.tar"))
-    _psnr, _ssim, _sam = eval(model, x_test, y_test, log_img=True, table_type="test")
+    _psnr, _ssim, _sam = eval(model, test_dl, log_img=True, table_type="test")
     stats_msg = f"best SSIM model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
     print(stats_msg)
     with open('training_info.txt', 'a') as f:
@@ -311,6 +328,14 @@ if __name__ == '__main__':
     x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale)
     x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
 
+    bs=4
+    train_data = HSI_Dataset(x_train, y_train)
+    train_dl = DataLoader(train_data, batch_size=bs, shuffle=True)
+    val_data = HSI_Dataset(x_val, y_val)
+    val_dl = DataLoader(val_data, batch_size=bs, shuffle=False)
+    test_data = HSI_Dataset(x_test, y_test)
+    test_dl = DataLoader(test_data, batch_size=bs, shuffle=False)
+
     channels = x_train.shape[1]
 
     if opt.model == "SRCNN":
@@ -319,6 +344,14 @@ if __name__ == '__main__':
         opt.weight_transfer = False
     if opt.model == "SRCNN_residual":
         model = SRCNN(channels=channels, is_residual=True).to(device)
+        opt.q = 1
+        opt.weight_transfer = False
+    if opt.model == "SRCNN_3D":
+        model = SRCNN_3D().to(device)
+        opt.q = 1
+        opt.weight_transfer = False
+    if opt.model == "SRCNN_3D_residual":
+        model = SRCNN_3D(is_residual=True).to(device)
         opt.q = 1
         opt.weight_transfer = False
     elif opt.model == "SRONN":
@@ -362,5 +395,5 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(opt.checkpoint))
         model.to(device)
 
-    psnrs, ssims, sams = train(model, x_train, y_train, x_val, y_val, opt, jt=dataset_name)
+    psnrs, ssims, sams = train(model, train_dl, val_dl, test_dl, opt, jt=dataset_name)
 

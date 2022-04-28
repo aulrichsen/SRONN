@@ -2,6 +2,7 @@ import os
 
 import torch
 import torch.nn as nn
+from torch.utils.data import Dataset
 import scipy.io
 import matplotlib.pyplot as plt
 import numpy as np
@@ -139,6 +140,18 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[]):
     dataset_name += str(res_ratio) + band_rm_str
     return x_train, y_train, x_val, y_val, x_test, y_test, dataset_name
 
+
+class HSI_Dataset(Dataset):
+
+    def __init__(self, X, Y):
+        self.X = X
+        self.Y = Y
+
+    def __len__(self):
+        return self.X.shape[0]
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.Y[idx]
 
 if __name__ == "__main__":
 

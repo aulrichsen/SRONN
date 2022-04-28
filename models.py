@@ -36,6 +36,39 @@ class SRCNN(nn.Module):
 
         return out
 
+
+class SRCNN_3D(nn.Module):
+    """
+    3D version of SRCNN 
+    """
+    def __init__(self, is_residual=False):
+        super(SRCNN_3D, self).__init__()
+        self.name = "SRCNN_3D"
+        if is_residual: self.name += "_residual"
+        self.is_residual = is_residual
+
+        self.conv_1 = nn.Conv3d(1, 128, kernel_size=9, padding='same') # Saye valid padding in SRCNN repo ...
+        nn.init.xavier_uniform_(self.conv_1.weight)  # Init with golrot uniform weights
+        self.conv_2 = nn.Conv3d(128, 64, kernel_size=3, padding='same')
+        nn.init.xavier_uniform_(self.conv_2.weight)  # Init with golrot uniform weights
+        self.conv_3 = nn.Conv3d(64, 1, kernel_size=5, padding='same')    # Saye valid padding in SRCNN repo ...
+        nn.init.xavier_uniform_(self.conv_3.weight)  # Init with golrot uniform weights
+        
+        self.relu = nn.ReLU()
+
+        self.num_params = self.conv_1.weight.numel() + self.conv_1.bias.numel() + self.conv_2.weight.numel() + self.conv_2.bias.numel() + self.conv_3.weight.numel() + self.conv_3.bias.numel()
+
+    def forward(self, x):
+        x = x.unsqueeze(1)
+        out = self.relu(self.conv_1(x))
+        out = self.relu(self.conv_2(out))
+        out = self.conv_3(out)
+
+        if self.is_residual: out = torch.add(out, x)
+
+        return out.squeeze()
+
+
 class SRONN(nn.Module):
     """
     ONN Version of SRCNN
