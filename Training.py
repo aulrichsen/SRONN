@@ -38,6 +38,8 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation")
     SAM:    Spectral Angle Mapper; Spectral quality metric, measures similarity between two vectors, pixel spectrum, averaged across each pixel
     """
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     model.eval()
 
     all_psnr = []
@@ -52,6 +54,7 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation")
         predicted_output = []
         X, Y = [], []
         for x_val, y_val in iter(val_dl):
+            x_val, y_val = x_val.to(device), y_val.to(device)
             predicted_output.append(model(x_val))
             X.append(x_val)
             Y.append(y_val)
@@ -129,6 +132,9 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     print("Starting training...")
     logging.basicConfig(filename='training.log', filemode='w', level=logging.DEBUG)    # filemode='w' resets logger on every run  
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
     if opt.optimizer == "Adam":
         optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
     elif opt.optimizer == "SGD":
@@ -176,6 +182,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
         total_loss = []
         for x_train, y_train in iter(train_dl):
+            x_train, y_train = x_train.to(device), y_train.to(device)
             output = model(x_train)
             #print(x_train.shape, output.shape, y_train.shape)
             loss = lossFunction(output, y_train)  
@@ -327,12 +334,13 @@ if __name__ == '__main__':
 
     opt = parse_train_opt()
 
-    if opt.dataset == "all":
+    if opt.dataset == "All":
         train_data, val_data, test_data = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
         train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True)
         val_dl = DataLoader(val_data, batch_size=opt.bs, shuffle=False)
         test_dl = DataLoader(test_data, batch_size=opt.bs, shuffle=False)
         dataset_name = "All x" + str(opt.scale)
+        channels = 102
     else:
         x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
         x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
@@ -344,7 +352,7 @@ if __name__ == '__main__':
         test_data = HSI_Dataset(x_test, y_test)
         test_dl = DataLoader(test_data, batch_size=opt.bs, shuffle=False)
 
-    channels = x_train.shape[1]
+        channels = x_train.shape[1]
 
     if opt.model == "SRCNN":
         model = SRCNN(channels=channels).to(device)

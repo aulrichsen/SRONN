@@ -70,7 +70,7 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     elif dataset == "KSC":
         hsi = scipy.io.loadmat(DATA_DIR + '/KSC.mat')
     elif dataset == "Pavia":
-        hsi = scipy.io.loadmat(DATA_DIR + '/PaviaU.mat')
+        hsi = scipy.io.loadmat(DATA_DIR + '/Pavia.mat')
     elif dataset == "Salinas":
         hsi = scipy.io.loadmat(DATA_DIR + '/Salinas_corrected.mat')
     elif dataset == "Urban":
@@ -238,13 +238,13 @@ def get_all_data(res_ratio=2, SR_kernel=False):
             Y_test.append(_Y_test[:, c:c+C_len])
         
     # Pavia U for testing
-    X_1, Y_1, X_2, Y_2, X_3, Y_3, data_name = get_data(dataset="PvaiaU", res_ratio=res_ratio, SR_kernel=SR_kernel)
-    X_test.append(X_1[-C_len:])
-    Y_test.append(Y_1[-C_len:])
-    X_test.append(X_2[-C_len:])
-    Y_test.append(Y_2[-C_len:])
-    X_test.append(X_3[-C_len:])
-    Y_test.append(Y_3[-C_len:])
+    X_1, Y_1, X_2, Y_2, X_3, Y_3, data_name = get_data(dataset="PaviaU", res_ratio=res_ratio, SR_kernel=SR_kernel)
+    X_test.append(X_1[:, -C_len:])
+    Y_test.append(Y_1[:, -C_len:])
+    X_test.append(X_2[:, -C_len:])
+    Y_test.append(Y_2[:, -C_len:])
+    X_test.append(X_3[:, -C_len:])
+    Y_test.append(Y_3[:, -C_len:])
 
     X_train = torch.cat(X_train, dim=0)
     Y_train = torch.cat(Y_train, dim=0)
