@@ -329,7 +329,7 @@ if __name__ == '__main__':
     x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
     x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
 
-    bs=4
+    bs=40
     train_data = HSI_Dataset(x_train, y_train)
     train_dl = DataLoader(train_data, batch_size=bs, shuffle=True)
     val_data = HSI_Dataset(x_val, y_val)
