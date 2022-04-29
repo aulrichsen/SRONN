@@ -1,4 +1,5 @@
 import os
+import math
 
 import torch
 import torch.nn as nn
@@ -58,14 +59,27 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
         assert False, 'No data directory found. Please add path DIRS.'
 
     #hsi =  scipy.io.loadmat('D:\HSI_SR_datasets\PaviaU.mat').get('paviaU') 
-    if dataset == "Pavia":
-        hsi = scipy.io.loadmat(DATA_DIR + '/PaviaU.mat').get('paviaU') 
-        dataset_name = "Pavia University x"
+    if dataset == "PaviaU":
+        hsi = scipy.io.loadmat(DATA_DIR + '/PaviaU.mat')#.get('paviaU') 
     elif dataset == "Botswana":
-        hsi = scipy.io.loadmat(DATA_DIR + '/Botswana.mat').get('Botswana')
-        dataset_name = "Botswana x"
+        hsi = scipy.io.loadmat(DATA_DIR + '/Botswana.mat')#.get('Botswana')
+    elif dataset == 'Cuprite':
+        hsi = scipy.io.loadmat(DATA_DIR + '/Cuprite_f970619t01p02_r02_sc03.a.rfl.mat')
+    elif dataset == 'Indian_Pines':
+        hsi = scipy.io.loadmat(DATA_DIR + '/Indian_pines_corrected.mat')
+    elif dataset == "KSC":
+        hsi = scipy.io.loadmat(DATA_DIR + '/KSC.mat')
+    elif dataset == "Pavia":
+        hsi = scipy.io.loadmat(DATA_DIR + '/PaviaU.mat')
+    elif dataset == "Salinas":
+        hsi = scipy.io.loadmat(DATA_DIR + '/Salinas_corrected.mat')
+    elif dataset == "Urban":
+        hsi = scipy.io.loadmat(DATA_DIR + '/UrbanData.mat')
     else:
         assert False, "Invalid dataset."
+    dataset += " x"
+    hsi = hsi.get(list(hsi.keys())[-1])     # Extract only data (Remove header etc)
+    
 
     hsi = hsi_normalize_full(hsi)
     #hsi = np.float16(hsi)
@@ -147,8 +161,8 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     if bands_to_remove:
         band_rm_str = " - "+ ', '.join(str(c) for c in bands_to_remove)
 
-    dataset_name += str(res_ratio) + band_rm_str
-    return x_train, y_train, x_val, y_val, x_test, y_test, dataset_name
+    dataset += str(res_ratio) + band_rm_str
+    return x_train, y_train, x_val, y_val, x_test, y_test, dataset
 
 
 class HSI_Dataset(Dataset):
@@ -185,8 +199,68 @@ def numeric_kernel(im, kernel, scale_factor, output_shape):
            np.round(np.linspace(0, im.shape[1] - 1 / scale_factor[1], output_shape[1])).astype(int), :]
 
 
+def get_all_data(res_ratio=2, SR_kernel=False):
+    test_dataset = "PaviaU"
+
+    datasets = ["Botswana", 'Cuprite', 'Indian_Pines', "KSC", "Pavia", "Salinas", "Urban"]
+
+    C_len = 102     # Channel size of smallest dataset (Pavia)
+
+    X_train, Y_train, X_val, Y_val, X_test, Y_test = [], [], [], [], [], []
+
+    for dataset in datasets:
+        _X_train, _Y_train, _X_val, _Y_val, _X_test, _Y_test, data_name = get_data(dataset=dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
+
+        print(data_name, _X_train.shape[1])
+
+        num_splits = math.ceil(_X_train.shape[1]/C_len)
+
+        X_train.append(_X_train[:, :C_len])
+        Y_train.append(_Y_train[:, :C_len])
+        X_val.append(_X_val[:, :C_len])
+        Y_val.append(_Y_val[:, :C_len])
+        X_test.append(_X_test[:, :C_len])
+        Y_test.append(_Y_test[:, :C_len])
+        if num_splits >= 2:
+            X_train.append(_X_train[:, -C_len:])
+            Y_train.append(_Y_train[:, -C_len:])
+            X_val.append(_X_val[:, -C_len:])
+            Y_val.append(_Y_val[:, -C_len:])
+            X_test.append(_X_test[:, -C_len:])
+            Y_test.append(_Y_test[:, -C_len:])
+        if num_splits >= 3:
+            c = int(_X_train.shape[1]/3)    # Start channel to select central bands 
+            X_train.append(_X_train[:, c:c+C_len])
+            Y_train.append(_Y_train[:, c:c+C_len])
+            X_val.append(_X_val[:, c:c+C_len])
+            Y_val.append(_Y_val[:, c:c+C_len])
+            X_test.append(_X_test[:, c:c+C_len])
+            Y_test.append(_Y_test[:, c:c+C_len])
+        
+    # Pavia U for testing
+    X_1, Y_1, X_2, Y_2, X_3, Y_3, data_name = get_data(dataset="PvaiaU", res_ratio=res_ratio, SR_kernel=SR_kernel)
+    X_test.append(X_1[-C_len:])
+    Y_test.append(Y_1[-C_len:])
+    X_test.append(X_2[-C_len:])
+    Y_test.append(Y_2[-C_len:])
+    X_test.append(X_3[-C_len:])
+    Y_test.append(Y_3[-C_len:])
+
+    X_train = torch.cat(X_train, dim=0)
+    Y_train = torch.cat(Y_train, dim=0)
+    X_val = torch.cat(X_val, dim=0)
+    Y_val = torch.cat(Y_val, dim=0)
+    X_test = torch.cat(X_test, dim=0)
+    Y_test = torch.cat(Y_test, dim=0)
+
+    train_dl = HSI_Dataset(X_train, Y_train)
+    val_dl = HSI_Dataset(X_val, Y_val)
+    test_dl = HSI_Dataset(X_test, Y_test)
+
+    return train_dl, val_dl, test_dl
+
 if __name__ == "__main__":
 
-    test = get_data(SR_kernel=True)
+    
 
-    print(test[-1])
+    print(X_train.shape)

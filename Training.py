@@ -15,7 +15,7 @@ from datetime import datetime
 
 from fastonn.utils.adam import Adam
 
-from Load_Data import get_data, HSI_Dataset
+from Load_Data import get_all_data, get_data, HSI_Dataset
 
 from models import *
 
@@ -306,6 +306,7 @@ def parse_train_opt():
     parser.add_argument('--trans', dest="weight_transfer", action='store_true', help='Transfer weights from SRCNN model.')
     parser.add_argument('--checkpoint', type=str, default="", help='Weight checkpoint to begin training with.')
     parser.add_argument('--SR_kernel', action='store_true', help='Use KernelGAN downsampling.')
+    parser.add_argument('--bs', type=int, default=64, help="Training batch size.")
 
     opt = parser.parse_args()
 
@@ -326,16 +327,22 @@ if __name__ == '__main__':
 
     opt = parse_train_opt()
 
-    x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
-    x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
+    if opt.dataset == "all":
+        train_data, val_data, test_data = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
+        train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True)
+        val_dl = DataLoader(val_data, batch_size=opt.bs, shuffle=False)
+        test_dl = DataLoader(test_data, batch_size=opt.bs, shuffle=False)
+        dataset_name = "All x" + str(opt.scale)
+    else:
+        x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
+        x_train, y_train, x_val, y_val, x_test, y_test = x_train.to(device), y_train.to(device), x_val.to(device), y_val.to(device), x_test.to(device), y_test.to(device)
 
-    bs=40
-    train_data = HSI_Dataset(x_train, y_train)
-    train_dl = DataLoader(train_data, batch_size=bs, shuffle=True)
-    val_data = HSI_Dataset(x_val, y_val)
-    val_dl = DataLoader(val_data, batch_size=bs, shuffle=False)
-    test_data = HSI_Dataset(x_test, y_test)
-    test_dl = DataLoader(test_data, batch_size=bs, shuffle=False)
+        train_data = HSI_Dataset(x_train, y_train)
+        train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True)
+        val_data = HSI_Dataset(x_val, y_val)
+        val_dl = DataLoader(val_data, batch_size=opt.bs, shuffle=False)
+        test_data = HSI_Dataset(x_test, y_test)
+        test_dl = DataLoader(test_data, batch_size=opt.bs, shuffle=False)
 
     channels = x_train.shape[1]
 

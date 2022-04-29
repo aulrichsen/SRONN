@@ -20,6 +20,7 @@ def parse_opt():
     parser.add_argument('--model_file', type=str, default='SRCNN_best_PSNR.pth.tar', help="File name of model.")
     parser.add_argument('--dataset', type=str, default="Pavia", help="Dataset trained on.")
     parser.add_argument('--scale', type=int, default=2, help="Super resolution scale factor.")
+    parser.add_argument('--SR_kernel', action='store_true', help='Use KernelGAN downsampling.')
     
     opt = parser.parse_args()
     arg_str = "Args: " + ', '.join(f'{k}={v}' for k, v in vars(opt).items())
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     
     opt = parse_opt()
     
-    _, _, _, _, test_X, test_Y, _ = get_data(dataset=opt.dataset, res_ratio=opt.scale)
+    _, _, _, _, test_X, test_Y, _ = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
     channels = test_X.shape[1]
 
     if "SRONN_BN" in opt.model_file:
