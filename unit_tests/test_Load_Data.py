@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import torch
 import torch.nn as nn
 
 from Load_Data import get_data, bicubic_lr
@@ -22,6 +23,18 @@ class Test_Load_Data(unittest.TestCase):
         mse = ((test_img - test_out)**2).mean(axis=None)
 
         self.assertGreater(mse, 0, "bicubic_lr input and output identical")
+    
+    def test_data_range(self):
+
+        datasets = ["Botswana", 'Cuprite', 'Indian_Pines', "KSC", "Pavia", "Salinas", "Urban", "PaviaU"]
+
+        for ds in datasets:
+            x_train, y_train, x_val, y_val, x_test, y_test, _ = get_data(dataset=ds)
+            with self.subTest():
+                self.assertEqual(max(torch.max(x_train), torch.max(x_val), torch.max(x_test)), 1.0, msg=f"{ds} X max not 1")
+                self.assertEqual(max(torch.min(x_train), torch.min(x_val), torch.min(x_test)), 0.0, msg=f"{ds} X min not 1")
+                self.assertEqual(max(torch.max(y_train), torch.max(y_val), torch.max(y_test)), 1.0, msg=f"{ds} Y max not 1")
+                self.assertEqual(max(torch.min(y_train), torch.min(y_val), torch.min(y_test)), 0.0, msg=f"{ds} Y min not 1")
 
     def test_reproducible(self):
         """
