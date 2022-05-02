@@ -142,10 +142,10 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     Y = np.float32(Y)
 
     (x_train, x_test, y_train, y_test) = train_test_split(X, Y, test_size=0.3,random_state=0)
-    print('Training samples: ', x_train.shape[0])
+    #print('Training samples: ', x_train.shape[0])
     (x_val, x_test, y_val, y_test) = train_test_split(x_test, y_test, test_size=0.5,random_state=0)
-    print('Validation samples: ', x_val.shape[0])
-    print('Testing samples: ', x_test.shape[0])
+    #print('Validation samples: ', x_val.shape[0])
+    #print('Testing samples: ', x_test.shape[0])
 
 
     x_train = torch.from_numpy(x_train)
@@ -211,7 +211,7 @@ def get_all_data(res_ratio=2, SR_kernel=False):
     for dataset in datasets:
         _X_train, _Y_train, _X_val, _Y_val, _X_test, _Y_test, data_name = get_data(dataset=dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
 
-        print(data_name, _X_train.shape[1])
+        #print(data_name, _X_train.shape[1])
 
         num_splits = math.ceil(_X_train.shape[1]/C_len)
 
@@ -238,7 +238,7 @@ def get_all_data(res_ratio=2, SR_kernel=False):
             Y_test.append(_Y_test[:, c:c+C_len])
         
     # Pavia U for testing
-    X_1, Y_1, X_2, Y_2, X_3, Y_3, data_name = get_data(dataset="PaviaU", res_ratio=res_ratio, SR_kernel=SR_kernel)
+    X_1, Y_1, X_2, Y_2, X_3, Y_3, data_name = get_data(dataset=test_dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
     X_test.append(X_1[:, -C_len:])
     Y_test.append(Y_1[:, -C_len:])
     X_test.append(X_2[:, -C_len:])
@@ -253,14 +253,23 @@ def get_all_data(res_ratio=2, SR_kernel=False):
     X_test = torch.cat(X_test, dim=0)
     Y_test = torch.cat(Y_test, dim=0)
 
-    train_dl = HSI_Dataset(X_train, Y_train)
-    val_dl = HSI_Dataset(X_val, Y_val)
-    test_dl = HSI_Dataset(X_test, Y_test)
+    train_data = HSI_Dataset(X_train, Y_train)
+    val_data = HSI_Dataset(X_val, Y_val)
+    test_data = HSI_Dataset(X_test, Y_test)
 
-    return train_dl, val_dl, test_dl
+    return train_data, val_data, test_data
 
 if __name__ == "__main__":
 
     
+    train_data, val_data, test_data = get_all_data()
 
-    print(X_train.shape)
+    print(train_data.X.shape, train_data.Y.shape)
+    print(val_data.X.shape, val_data.Y.shape)
+    print(test_data.X.shape, test_data.Y.shape)
+
+    i=4
+    X = val_data.X[i, i*10].cpu()
+    Y = val_data.Y[i, i*10].cpu()
+
+    print(X.shape, Y.shape)

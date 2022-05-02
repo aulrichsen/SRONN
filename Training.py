@@ -81,9 +81,10 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation")
         all_ssim.append(ssim(grountruth, predict))
         all_sam.append(sam)
         if log_img:
-            img = X[i, i*10].cpu().numpy()
+            ofs = 0 if X.shape[0] < 100 else 1+(i+1)*10
+            img = X[i+ofs, i*10].cpu().numpy()
             out = predicted_output[i, i*10].cpu().numpy()
-            tar = Y[i, i*10].cpu().numpy()
+            tar = Y[i+ofs, i*10].cpu().numpy()
             table.add_data(wandb.Image(img*255), wandb.Image(out*255), wandb.Image(tar*255), psnr(tar, out), ssim(tar, out))
         if disp_imgs:
             fig, axs = plt.subplots(2)

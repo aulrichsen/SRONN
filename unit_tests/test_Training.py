@@ -3,8 +3,10 @@ import unittest
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
 from Training import eval
+from Load_Data import HSI_Dataset
 
 class Test_Model_Identical(nn.Module):
     def __init__(self):
@@ -31,10 +33,12 @@ class Test_Training(unittest.TestCase):
     
     def test_eval_identical(self):
         test_img = torch.rand(41,103,64,64)
+        test_data = HSI_Dataset(test_img, test_img)
+        test_dl = DataLoader(test_data, batch_size=64, shuffle=False)
 
         test_model = Test_Model_Identical().to(self.device)
 
-        psnr, ssim, sam = eval(test_model, test_img, test_img)
+        psnr, ssim, sam = eval(test_model, test_dl)
 
         self.assertGreater(psnr, 100, msg="PSNR not high enough for identical.")
         self.assertEqual(ssim, 1, msg='SSIM not 1 for identical input and target.')
@@ -43,10 +47,12 @@ class Test_Training(unittest.TestCase):
     def test_eval_different(self):
         test_img = torch.rand(41,103,64,64).to(self.device)
         test_tar = torch.rand(41,103,64,64)
+        test_data = HSI_Dataset(test_img, test_tar)
+        test_dl = DataLoader(test_data, batch_size=64, shuffle=False)
 
         test_model = Test_Model_Different(channels=103).to(self.device)
 
-        psnr, ssim, sam = eval(test_model, test_img, test_tar)
+        psnr, ssim, sam = eval(test_model, test_dl)
 
         self.assertLess(psnr, 100, msg="PSNR too high for different input output.")
         self.assertLess(ssim, 1, msg='SSIM too high for different input and target.')

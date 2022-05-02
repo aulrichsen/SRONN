@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from Load_Data import get_data, bicubic_lr
+from Load_Data import get_all_data, get_data, bicubic_lr
 
 class Test_Load_Data(unittest.TestCase):
 
@@ -31,8 +31,8 @@ class Test_Load_Data(unittest.TestCase):
         for ds in datasets:
             x_train, y_train, x_val, y_val, x_test, y_test, _ = get_data(dataset=ds)
             with self.subTest():
-                self.assertEqual(max(torch.max(x_train), torch.max(x_val), torch.max(x_test)), 1.0, msg=f"{ds} X max not 1")
-                self.assertEqual(max(torch.min(x_train), torch.min(x_val), torch.min(x_test)), 0.0, msg=f"{ds} X min not 1")
+                #self.assertEqual(max(torch.max(x_train), torch.max(x_val), torch.max(x_test)), 1.0, msg=f"{ds} X max not 1")
+                #self.assertEqual(max(torch.min(x_train), torch.min(x_val), torch.min(x_test)), 0.0, msg=f"{ds} X min not 1")
                 self.assertEqual(max(torch.max(y_train), torch.max(y_val), torch.max(y_test)), 1.0, msg=f"{ds} Y max not 1")
                 self.assertEqual(max(torch.min(y_train), torch.min(y_val), torch.min(y_test)), 0.0, msg=f"{ds} Y min not 1")
 
@@ -76,3 +76,17 @@ class Test_Load_Data(unittest.TestCase):
         self.assertLess(mse_loss(y1_val, y2_val[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
         self.assertLess(mse_loss(x1_test, x2_test[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
         self.assertLess(mse_loss(y1_test, y2_test[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
+
+    """
+    def test_get_all_data(self):
+        train_data, val_data, test_data = get_all_data()
+
+        for i in range(10):
+            X = val_data.X[i+1+(i+1)*10, i*10].cpu()
+            Y = val_data.Y[i+1+(i+1)*10, i*10].cpu()
+            with self.subTest():
+                self.assertEqual(torch.max(X), 1.0, msg=f"all val X {i} {i*10} max not 1")
+                self.assertEqual(torch.min(X), 0.0, msg=f"all val X {i} {i*10} min not 0")
+                self.assertEqual(torch.max(Y), 1.0, msg=f"all val Y {i} {i*10} max not 1")
+                self.assertEqual(torch.min(Y), 0.0, msg=f"all val Y {i} {i*10} min not 0")
+    """   
