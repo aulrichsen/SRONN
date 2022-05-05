@@ -54,8 +54,8 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation")
         predicted_output = []
         X, Y = [], []
         for x_val, y_val in iter(val_dl):
-            if torch.cuda.device_count() <= 1: x_train = x_train.to(device)
-            y_train = y_train.to(device)
+            if torch.cuda.device_count() <= 1: x_val = x_val.to(device)
+            y_val = y_val.to(device)
             predicted_output.append(model(x_val))
             X.append(x_val)
             Y.append(y_val)
