@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import wandb
 from datetime import datetime
 
-from fastonn.utils.adam import Adam
+#from fastonn.utils.adam import Adam
 
 from Load_Data import get_all_data, get_data, HSI_Dataset
 
@@ -147,8 +147,8 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9)
     elif opt.optimizer == "RMSProp":
         optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr, alpha=0.99)
-    elif opt.optimizer == "FO_Adam":
-        optimizer = Adam(model.parameters(), lr=opt.lr)
+    #elif opt.optimizer == "FO_Adam":
+    #    optimizer = Adam(model.parameters(), lr=opt.lr)
     else:
         assert False, "Invalid optimizer."
 
