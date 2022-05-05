@@ -138,7 +138,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     gpus = torch.cuda.device_count()
     if gpus > 1:
         print(f"Using {gpus} GPUs")
-        model = nn.DataParallel(model, gpu_ids = [g for g in range(gpus)])
+        model = nn.DataParallel(model)
         model = model.to(device)
 
     if opt.optimizer == "Adam":
