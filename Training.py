@@ -135,6 +135,8 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     # If multiple GPUs, this is primary GPU
 
+    model_name = model.name     # If DaraParallel, can no longer access name attribute, save to variable
+
     gpus = torch.cuda.device_count()
     if gpus > 1:
         print(f"Using {gpus} GPUs")
@@ -161,7 +163,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
     wandb.init(
         project="HSI Super Resolution",
-        group=model.name,
+        group=model_name,
         job_type=jt,
         config={"num_params": model.num_params}
     )
@@ -232,15 +234,15 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         if val_psnr > best_psnr:
             best_psnr = val_psnr
             #print(f"New best PSNR!: {round(psnr, 3)}, epoch {epoch+1}")
-            torch.save(model.state_dict(), model.name+"_best_PSNR.pth.tar")
+            torch.save(model.state_dict(), model_name+"_best_PSNR.pth.tar")
         if val_ssim > best_ssim:
             best_ssim = val_ssim
             #print(f"New best SSIM!: {round(ssim, 3)}, epoch {epoch+1}")
-            torch.save(model.state_dict(), model.name+"_best_SSIM.pth.tar")
+            torch.save(model.state_dict(), model_name+"_best_SSIM.pth.tar")
         if val_sam < best_sam:
             best_sam = val_sam
             #print(f"New best SAM!: {round(sam, 3)}, epoch {epoch+1}")
-            torch.save(model.state_dict(), model.name+"_best_SAM.pth.tar")       
+            torch.save(model.state_dict(), model_name+"_best_SAM.pth.tar")       
 
 
     with open('training_info.txt', 'a') as f:
@@ -265,7 +267,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     #plt.show()
 
     # Test best SAM model
-    model.load_state_dict(torch.load(model.name+"_best_SAM.pth.tar"))
+    model.load_state_dict(torch.load(model_name+"_best_SAM.pth.tar"))
     _psnr, _ssim, _sam = eval(model, test_dl)
     stats_msg = f"best SAM model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
     print(stats_msg)
@@ -273,7 +275,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         f.write(stats_msg + '\n')
 
     # Test best PSNR model
-    model.load_state_dict(torch.load(model.name+"_best_PSNR.pth.tar"))
+    model.load_state_dict(torch.load(model_name+"_best_PSNR.pth.tar"))
     _psnr, _ssim, _sam = eval(model, test_dl, disp_imgs="Best PSNR Out Image")
     stats_msg = f"best PSNR model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
     print(stats_msg)
@@ -282,7 +284,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
     # Test best SSIM model
     # Use best SSIM  model for wandb test metrics 
-    model.load_state_dict(torch.load(model.name+"_best_SSIM.pth.tar"))
+    model.load_state_dict(torch.load(model_name+"_best_SSIM.pth.tar"))
     _psnr, _ssim, _sam = eval(model, test_dl, log_img=True, table_type="test")
     stats_msg = f"best SSIM model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
     print(stats_msg)
