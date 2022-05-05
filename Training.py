@@ -135,7 +135,8 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     # If multiple GPUs, this is primary GPU
 
-    model_name = model.name     # If DaraParallel, can no longer access name attribute, save to variable
+    model_name = model.name         # If DaraParallel, can no longer access name attribute, save to variable
+    num_params = model.num_params   # Same for num_params attribute
 
     gpus = torch.cuda.device_count()
     if gpus > 1:
@@ -165,7 +166,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         project="HSI Super Resolution",
         group=model_name,
         job_type=jt,
-        config={"num_params": model.num_params}
+        config={"num_params": num_params}
     )
     wandb.config.update(opt)
 
