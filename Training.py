@@ -135,7 +135,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     # If multiple GPUs, this is primary GPU
 
-    gpus = torch.device_count()
+    gpus = torch.cuda.device_count()
     if gpus > 1:
         print(f"Using {gpus} GPUs")
         model = nn.DataParallel(model, gpu_ids = [g for g in range(gpus)])
