@@ -342,16 +342,22 @@ def get_ONN_weights(cnn_layer, onn_layer):
     return nn.Parameter(w)
 
 if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print("device:", device)    
 
     opt = parse_train_opt()
 
     if opt.dataset == "All":
         train_data, val_data, test_data = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
-        train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True, pin_memory=True)
-        val_dl = DataLoader(val_data, batch_size=opt.bs, shuffle=False, pin_memory=True)
-        test_dl = DataLoader(test_data, batch_size=opt.bs, shuffle=False)
+        if opt.bs >= train_data.__len__():
+            # Don't use dataload to speed up training
+            train_dl = [(train_data.X.to(device), train_data.Y.to(device))]
+            val_dl = [(val_data.X.to(device), val_data.Y.to(device))]
+            test_dl = [(test_data.X.to(device), test_data.Y.to(device))]
+        else:
+            train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True)
+            val_dl = DataLoader(val_data, batch_size=opt.bs, shuffle=False)
+            test_dl = DataLoader(test_data, batch_size=opt.bs, shuffle=False)
         dataset_name = "All x" + str(opt.scale)
         channels = 102
     else:
