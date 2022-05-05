@@ -61,20 +61,28 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     #hsi =  scipy.io.loadmat('D:\HSI_SR_datasets\PaviaU.mat').get('paviaU') 
     if dataset == "PaviaU":
         hsi = scipy.io.loadmat(DATA_DIR + '/PaviaU.mat')#.get('paviaU') 
+        kernel = "LR_Kernels/PaviaU_kernel_x2.mat"
     elif dataset == "Botswana":
         hsi = scipy.io.loadmat(DATA_DIR + '/Botswana.mat')#.get('Botswana')
+        kernel = "LR_Kernels/Botswana_kernel_x2.mat"
     elif dataset == 'Cuprite':
         hsi = scipy.io.loadmat(DATA_DIR + '/Cuprite_f970619t01p02_r02_sc03.a.rfl.mat')
+        kernel = "LR_Kernels/Curpite_kernel_x2.mat"
     elif dataset == 'Indian_Pines':
         hsi = scipy.io.loadmat(DATA_DIR + '/Indian_pines_corrected.mat')
+        kernel = "LR_Kernels/Indian_pines_kernel_x2.mat"
     elif dataset == "KSC":
         hsi = scipy.io.loadmat(DATA_DIR + '/KSC.mat')
+        kernel = "LR_Kernels/KSC_kernel_x2.mat"
     elif dataset == "Pavia":
         hsi = scipy.io.loadmat(DATA_DIR + '/Pavia.mat')
+        kernel = "LR_Kernels/Pavia_kernel_x2.mat"
     elif dataset == "Salinas":
         hsi = scipy.io.loadmat(DATA_DIR + '/Salinas_corrected.mat')
+        kernel = "LR_Kernels/Salinas_kernel_x2.mat"
     elif dataset == "Urban":
         hsi = scipy.io.loadmat(DATA_DIR + '/UrbanData.mat')
+        kernel = "LR_Kernels/UrbanData_kernel_x2.mat"
     else:
         assert False, "Invalid dataset."
     dataset += " x"
@@ -122,7 +130,7 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     # Create Low resolution tiles
     lr_tiles = []
     if SR_kernel:
-        kernel = scipy.io.loadmat("LR_Kernels/PaviaU_kernel_x2.mat")
+        kernel = scipy.io.loadmat(kernel)
         for hr_tile_norm in hr_tiles:
             im_down = imresize(hr_tile_norm, scale_factor=1/res_ratio, kernel=kernel['Kernel'])
             w, h, c = hr_tile_norm.shape
