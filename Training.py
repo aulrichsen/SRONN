@@ -349,8 +349,8 @@ if __name__ == '__main__':
 
     if opt.dataset == "All":
         train_data, val_data, test_data = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
-        train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True)
-        val_dl = DataLoader(val_data, batch_size=opt.bs, shuffle=False)
+        train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True, pin_memory=True)
+        val_dl = DataLoader(val_data, batch_size=opt.bs, shuffle=False, pin_memory=True)
         test_dl = DataLoader(test_data, batch_size=opt.bs, shuffle=False)
         dataset_name = "All x" + str(opt.scale)
         channels = 102
