@@ -81,7 +81,7 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation")
         all_psnr.append(psnr(grountruth, predict))
         all_ssim.append(ssim(grountruth, predict))
         all_sam.append(sam)
-        if log_img:
+        if log_img and i <= int(X.shape[1]/10):
             ofs = 0 if X.shape[0] < 100 else 1+(i+1)*10
             img = X[i+ofs, i*10].cpu().numpy()
             out = predicted_output[i, i*10].cpu().numpy()
