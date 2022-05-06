@@ -3,7 +3,7 @@ import math
 
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, TensorDataset, DataLoader
 import scipy.io
 from scipy.ndimage import filters
 import matplotlib.pyplot as plt
@@ -207,7 +207,7 @@ def numeric_kernel(im, kernel, scale_factor, output_shape):
            np.round(np.linspace(0, im.shape[1] - 1 / scale_factor[1], output_shape[1])).astype(int), :]
 
 
-def get_all_data(res_ratio=2, SR_kernel=False):
+def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
     test_dataset = "PaviaU"
 
     datasets = ["Botswana", 'Cuprite', 'Indian_Pines', "KSC", "Pavia", "Salinas", "Urban"]
@@ -217,42 +217,52 @@ def get_all_data(res_ratio=2, SR_kernel=False):
     X_train, Y_train, X_val, Y_val, X_test, Y_test = [], [], [], [], [], []
 
     for dataset in datasets:
-        _X_train, _Y_train, _X_val, _Y_val, _X_test, _Y_test, data_name = get_data(dataset=dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
+        _X_train, _Y_train, _X_val, _Y_val, _X_test, _Y_test, _ = get_data(dataset=dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
 
         #print(data_name, _X_train.shape[1])
 
-        num_splits = math.ceil(_X_train.shape[1]/C_len)
+        if SISR:
+            X_train.append(_X_train.reshape(-1, 1, _X_train.shape[-2], _X_train.shape[-1]))
+            Y_train.append(_Y_train.reshape(-1, 1, _Y_train.shape[-2], _Y_train.shape[-1]))
+            X_val.append(_X_val.reshape(-1, 1, _X_val.shape[-2], _X_val.shape[-1]))
+            Y_val.append(_Y_val.reshape(-1, 1, _Y_val.shape[-2], _Y_val.shape[-1]))
+            X_test.append(_X_test.reshape(-1, 1, _X_test.shape[-2], _X_test.shape[-1]))
+            Y_test.append(_Y_test.reshape(-1, 1, _Y_test.shape[-2], _Y_test.shape[-1]))
+        else:
+            num_splits = math.ceil(_X_train.shape[1]/C_len)
 
-        X_train.append(_X_train[:, :C_len])
-        Y_train.append(_Y_train[:, :C_len])
-        X_val.append(_X_val[:, :C_len])
-        Y_val.append(_Y_val[:, :C_len])
-        X_test.append(_X_test[:, :C_len])
-        Y_test.append(_Y_test[:, :C_len])
-        if num_splits >= 2:
-            X_train.append(_X_train[:, -C_len:])
-            Y_train.append(_Y_train[:, -C_len:])
-            X_val.append(_X_val[:, -C_len:])
-            Y_val.append(_Y_val[:, -C_len:])
-            X_test.append(_X_test[:, -C_len:])
-            Y_test.append(_Y_test[:, -C_len:])
-        if num_splits >= 3:
-            c = int(_X_train.shape[1]/3)    # Start channel to select central bands 
-            X_train.append(_X_train[:, c:c+C_len])
-            Y_train.append(_Y_train[:, c:c+C_len])
-            X_val.append(_X_val[:, c:c+C_len])
-            Y_val.append(_Y_val[:, c:c+C_len])
-            X_test.append(_X_test[:, c:c+C_len])
-            Y_test.append(_Y_test[:, c:c+C_len])
+            X_train.append(_X_train[:, :C_len])
+            Y_train.append(_Y_train[:, :C_len])
+            X_val.append(_X_val[:, :C_len])
+            Y_val.append(_Y_val[:, :C_len])
+            X_test.append(_X_test[:, :C_len])
+            Y_test.append(_Y_test[:, :C_len])
+            if num_splits >= 2:
+                X_train.append(_X_train[:, -C_len:])
+                Y_train.append(_Y_train[:, -C_len:])
+                X_val.append(_X_val[:, -C_len:])
+                Y_val.append(_Y_val[:, -C_len:])
+                X_test.append(_X_test[:, -C_len:])
+                Y_test.append(_Y_test[:, -C_len:])
+            if num_splits >= 3:
+                c = int(_X_train.shape[1]/3)    # Start channel to select central bands 
+                X_train.append(_X_train[:, c:c+C_len])
+                Y_train.append(_Y_train[:, c:c+C_len])
+                X_val.append(_X_val[:, c:c+C_len])
+                Y_val.append(_Y_val[:, c:c+C_len])
+                X_test.append(_X_test[:, c:c+C_len])
+                Y_test.append(_Y_test[:, c:c+C_len])
         
     # Pavia U for testing
-    X_1, Y_1, X_2, Y_2, X_3, Y_3, data_name = get_data(dataset=test_dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
-    X_test.append(X_1[:, -C_len:])
-    Y_test.append(Y_1[:, -C_len:])
-    X_test.append(X_2[:, -C_len:])
-    Y_test.append(Y_2[:, -C_len:])
-    X_test.append(X_3[:, -C_len:])
-    Y_test.append(Y_3[:, -C_len:])
+    X_1, Y_1, X_2, Y_2, X_3, Y_3, _ = get_data(dataset=test_dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
+    X = torch.cat((X_1, X_2, X_3), dim=0)
+    Y = torch.cat((Y_1, Y_2, Y_3), dim=0)
+    if SISR:
+        X_test.append(X.reshape(-1, 1, X.shape[-2], X.shape[-1]))
+        Y_test.append(Y.reshape(-1, 1, Y.shape[-2], Y.shape[-1]))
+    else:
+        X_test.append(X[:, -C_len:])
+        Y_test.append(Y[:, -C_len:])
 
     X_train = torch.cat(X_train, dim=0)
     Y_train = torch.cat(Y_train, dim=0)
@@ -261,14 +271,36 @@ def get_all_data(res_ratio=2, SR_kernel=False):
     X_test = torch.cat(X_test, dim=0)
     Y_test = torch.cat(Y_test, dim=0)
 
-    train_data = HSI_Dataset(X_train, Y_train)
-    val_data = HSI_Dataset(X_val, Y_val)
-    test_data = HSI_Dataset(X_test, Y_test)
+    return X_train, Y_train, X_val, Y_val, X_test, Y_test
 
-    return train_data, val_data, test_data
+
+def get_dataloaders(opt, device):
+    if opt.dataset == "All":
+        x_train, y_train, x_val, y_val, x_test, y_test = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel, SISR=opt.SISR)
+        dataset_name = "All x" + str(opt.scale)
+    else:
+        x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
+        if opt.SISR:
+            x_train = x_train.reshape(-1, 1, x_train.shape[-2], x_train.shape[-1])
+            y_train = y_train.reshape(-1, 1, x_train.shape[-2], x_train.shape[-1])
+            x_val = x_val.reshape(-1, 1, x_val.shape[-2], x_val.shape[-1])
+            y_val = y_val.reshape(-1, 1, y_val.shape[-2], y_val.shape[-1])
+            x_test = x_test.reshape(-1, 1, x_test.shape[-2], x_test.shape[-1])
+            y_test = y_test.reshape(-1, 1, y_test.shape[-2], y_test.shape[-1])
+
+    train_data = TensorDataset(x_train.to(device), y_train.to(device))
+    train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True)
+    val_data = TensorDataset(x_val.to(device), y_val.to(device))
+    val_dl = DataLoader(val_data, batch_size=opt.bs*2, shuffle=False)
+    test_data = TensorDataset(x_test.to(device), y_test.to(device))
+    test_dl = DataLoader(test_data, batch_size=opt.bs*2, shuffle=False)
+
+    channels = x_train.shape[1]
+
+    return train_dl, val_dl, test_dl, channels, dataset_name
+
 
 if __name__ == "__main__":
-
     
     train_data, val_data, test_data = get_all_data()
 
