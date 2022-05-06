@@ -297,6 +297,8 @@ def get_dataloaders(opt, device):
             x_test = x_test.reshape(-1, 1, x_test.shape[-2], x_test.shape[-1])
             y_test = y_test.reshape(-1, 1, y_test.shape[-2], y_test.shape[-1])
 
+    if opt.SISS: dataset_name += " SISR"
+
     train_data = TensorDataset(x_train.to(device), y_train.to(device))
     train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True)
     val_data = TensorDataset(x_val.to(device), y_val.to(device))
