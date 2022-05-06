@@ -128,9 +128,9 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
     wandb.init(
             project="HSI Super Resolution",
-            group=opt.model_name,
+            group=model.name,
             job_type=jt,
-            config={"num_params": opt.num_params}
+            config={"num_params": model.num_params}
         )
     wandb.config.update(opt)
 
