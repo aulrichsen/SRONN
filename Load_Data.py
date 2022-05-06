@@ -74,7 +74,7 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     elif dataset == 'Indian_Pines':
         hsi = scipy.io.loadmat(DATA_DIR + '/Indian_pines_corrected.mat')
         if res_ratio == 2:
-            kernel = "LR_Kernels/Indian_pines_kernel_x2.mat"
+            kernel = "LR_Kernels/Indian_pines_corrected_kernel_x2.mat"
     elif dataset == "KSC":
         hsi = scipy.io.loadmat(DATA_DIR + '/KSC.mat')
         if res_ratio == 2:
@@ -86,7 +86,7 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     elif dataset == "Salinas":
         hsi = scipy.io.loadmat(DATA_DIR + '/Salinas_corrected.mat')
         if res_ratio == 2:
-            kernel = "LR_Kernels/Salinas_kernel_x2.mat"
+            kernel = "LR_Kernels/Salinas_corrected_kernel_x2.mat"
     elif dataset == "Urban":
         hsi = scipy.io.loadmat(DATA_DIR + '/UrbanData.mat')
         if res_ratio == 2:
