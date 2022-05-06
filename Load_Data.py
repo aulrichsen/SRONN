@@ -49,7 +49,8 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     PC_DIR = 'C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset'  # For my PC
     MAC_DIR = "../datasets"  # For my Mac
     NOUR_DIR = 'D:/HSI_SR_datasets'  # Nour's directory
-    DIRS = [PC_DIR, MAC_DIR, NOUR_DIR]
+    COLAB_DIR = '/content/gdrive/My Drive/PhD/SR/dataset'
+    DIRS = [PC_DIR, MAC_DIR, NOUR_DIR, COLAB_DIR]
 
     for data_dir in DIRS:
         if os.path.isdir(data_dir):

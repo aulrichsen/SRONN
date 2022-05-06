@@ -22,7 +22,7 @@ Current State of the art
 ...
 """
 
-def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation"):
+def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation", disp_slices=get_disp_slices()):
     """
     Get performance metrics
     PSNR: Peak Signal to Noise Ratio (higher the better); Spatial quality metric
@@ -37,14 +37,10 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation")
     all_ssim = []
     all_sam = []
     
-    if log_img:
-        # Create a wandb Table to log images
-        table = wandb.Table(columns=["low res", "pred", "high res", "PSNR", "SSIM"])
-    
     with torch.no_grad():
         predicted_output = []
         X, Y = [], []
-        for x_val, y_val in iter(val_dl):
+        for x_val, y_val in val_dl:
             predicted_output.append(model(x_val))
             X.append(x_val)
             Y.append(y_val)
@@ -70,13 +66,6 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation")
         all_psnr.append(psnr(grountruth, predict))
         all_ssim.append(ssim(grountruth, predict))
         all_sam.append(sam)
-        if log_img and i <= int(X.shape[1]/10):
-            # Use dict to select display images for specific datasets
-            ofs = 0 if X.shape[0] < 100 else 1+(i+1)*10     # Offset value for selection of better display images (i.e. ones that are not primarily black)
-            img = X[i+ofs, i*10].cpu().numpy()
-            out = predicted_output[i, i*10].cpu().numpy()
-            tar = Y[i+ofs, i*10].cpu().numpy()
-            table.add_data(wandb.Image(img*255), wandb.Image(out*255), wandb.Image(tar*255), psnr(tar, out), ssim(tar, out))
         if disp_imgs:
             fig, axs = plt.subplots(2)
             fig.suptitle('PSNR = ' + str(psnr(predict,grountruth)) + ', SSIM = '+ str(ssim(predict, grountruth)) + ', SAM = ' + str(sam))
@@ -84,6 +73,16 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation")
             axs[1].imshow(grountruth[:,:,2],cmap='gray')
     
     if log_img:
+        # Create a wandb Table to log images
+        table = wandb.Table(columns=["low res", "pred", "high res", "PSNR", "SSIM"])
+    
+        for disp_slice in disp_slices:
+            b, c = disp_slice["b"], disp_slice["c"]
+            ofs = 0 if X.shape[0] < 100 else 1+(i+1)*10     # Offset value for selection of better display images (i.e. ones that are not primarily black)
+            img = X[b, c].cpu().numpy()
+            out = predicted_output[b, c].cpu().numpy()
+            tar = Y[b, c].cpu().numpy()
+            table.add_data(wandb.Image(img*255), wandb.Image(out*255), wandb.Image(tar*255), psnr(tar, out), ssim(tar, out))
         wandb.log({table_type+"_predictions":table}, commit=False)
 
     if disp_imgs: fig.savefig(disp_imgs)
@@ -167,7 +166,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
             break
 
         total_loss = []
-        for x_train, y_train in iter(train_dl):
+        for x_train, y_train in train_dl:
 
             output = model(x_train)
             #print(x_train.shape, output.shape, y_train.shape)
@@ -185,7 +184,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         loss = sum(total_loss)/len(total_loss)  # get average loss for the epoch for display
 
         log_img = (epoch + 1) % 200 == 0        # Only save images to wandb every 200 epcohs (speeds up sync)
-        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=log_img)
+        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=log_img, disp_slices=get_disp_slices(opt.dataset))
         psnrs.append(val_psnr)
         ssims.append(val_ssim)
         sams.append(val_sam)
@@ -245,7 +244,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     save_models = ["SAM", "PSNR", "SSIM"]
     for save_model in save_models:
         model.load_state_dict(torch.load(model_name+f"_best_{save_model}.pth.tar"))
-        _psnr, _ssim, _sam = eval(model, test_dl, log_img=save_model=="SSIM", table_type="test")    # wandb log SSIM test images
+        _psnr, _ssim, _sam = eval(model, test_dl, log_img=save_model=="SSIM", table_type="test", disp_slices=get_disp_slices(opt.dataset))    # wandb log SSIM test images
         stats_msg = f"best {save_model} model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
         print(stats_msg)
         with open('training_info.txt', 'a') as f:
