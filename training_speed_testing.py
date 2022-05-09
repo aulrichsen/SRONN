@@ -36,9 +36,12 @@ if __name__ == "__main__":
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     # If multiple GPUs, this is primary GPU
 
+    start_time = time.time()
     train_dl, val_dl, test_dl, channels, dataset_name = get_dataloaders(opt, device)
+    print("get_dataloaders time:", time.time()-start_time)
+    print("channels:", channels)
 
-    model = SRONN(channels=102, q=opt.q, is_residual=True).to(device)
+    model = SRONN(channels=channels, q=opt.q, is_residual=True).to(device)
 
     model_name = model.name         # If DaraParallel, can no longer access name attribute, save to variable
 
@@ -88,8 +91,7 @@ if __name__ == "__main__":
         loss = sum(total_loss)/len(total_loss)  # get average loss for the epoch for display
 
         start_time = time.time()
-        log_img = (epoch + 1) % 200 == 0        # Only save images to wandb every 200 epcohs (speeds up sync)
-        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=log_img, disp_slices=get_disp_slices(opt.dataset, opt.SISR))
+        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=False, disp_slices=get_disp_slices(opt.dataset, opt.SISR))
         eval_time = time.time()-start_time
 
         forward_times = [r(t) for t in forward_times]
