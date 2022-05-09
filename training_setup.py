@@ -50,15 +50,22 @@ def get_loss_function(opt):
 
     return loss_function
 
-def get_disp_slices(slices="default"):
+def get_disp_slices(slices="default", SISR=False):
     """
     Choose specific indicies for wandb display
     """
     
     if slices == "All":
-        disp_slices = [{'b': 94, 'c': 82}, {'b': 55, 'c': 0}, {'b': 126, 'c': 56}, {'b': 28, 'c': 98}, {'b': 88, 'c': 61}, {'b': 125, 'c': 74}]
+        if SISR:
+            # SISR
+            disp_slices = [{'b': 11476, 'c': 0}, {'b': 11180, 'c': 0}, {'b': 13679, 'c': 0}, {'b': 12968, 'c': 0}, {'b': 13389, 'c': 0}, {'b': 10565, 'c': 0}]
+        else:
+            disp_slices = [{'b': 94, 'c': 82}, {'b': 55, 'c': 0}, {'b': 126, 'c': 56}, {'b': 28, 'c': 98}, {'b': 88, 'c': 61}, {'b': 125, 'c': 74}]
     else:
         # default
-        disp_slices = [{'b': 0, 'c': 0}, {'b': 2, 'c': 20}, {'b': 3, 'c': 30}, {'b': 4, 'c': 40}, {'b': 5, 'c': 50}, {'b': 6, 'c': 60}]
+        if SISR:
+            disp_slices = [{'b': 0, 'c': 0}, {'b': 220, 'c': 0}, {'b': 330, 'c': 0}, {'b': 440, 'c': 0}, {'b': 550, 'c': 0}, {'b': 660, 'c': 0}]
+        else: 
+            disp_slices = [{'b': 0, 'c': 0}, {'b': 2, 'c': 20}, {'b': 3, 'c': 30}, {'b': 4, 'c': 40}, {'b': 5, 'c': 50}, {'b': 6, 'c': 60}]
 
     return disp_slices

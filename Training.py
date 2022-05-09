@@ -184,7 +184,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         loss = sum(total_loss)/len(total_loss)  # get average loss for the epoch for display
 
         log_img = (epoch + 1) % 200 == 0        # Only save images to wandb every 200 epcohs (speeds up sync)
-        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=log_img, disp_slices=get_disp_slices(opt.dataset))
+        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=log_img, disp_slices=get_disp_slices(opt.dataset, opt.SISR))
         psnrs.append(val_psnr)
         ssims.append(val_ssim)
         sams.append(val_sam)
@@ -244,7 +244,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     save_models = ["SAM", "PSNR", "SSIM"]
     for save_model in save_models:
         model.load_state_dict(torch.load(model_name+f"_best_{save_model}.pth.tar"))
-        _psnr, _ssim, _sam = eval(model, test_dl, log_img=save_model=="SSIM", table_type="test", disp_slices=get_disp_slices(opt.dataset))    # wandb log SSIM test images
+        _psnr, _ssim, _sam = eval(model, test_dl, log_img=save_model=="SSIM", table_type="test", disp_slices=get_disp_slices(opt.dataset, opt.SISR))    # wandb log SSIM test images
         stats_msg = f"best {save_model} model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
         print(stats_msg)
         with open('training_info.txt', 'a') as f:
