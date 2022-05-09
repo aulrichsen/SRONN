@@ -56,7 +56,7 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation",
         ground_truth = Y[i,:,:,:]
 
         cos = torch.nn.CosineSimilarity(dim=0)
-        m = cos(predict[i,:,:,:],ground_truth)
+        m = cos(predict,ground_truth)
         mn = torch.mean(m)
         sam = math.acos(mn)*180/math.pi
         all_sam.append(sam)
