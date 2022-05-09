@@ -9,7 +9,7 @@ from Training import eval
 from training_setup import *
 from Load_Data import get_dataloaders
 
-def r(num, dp=4):
+def r(num, dp=3):
     return round(num, dp)
 
 
@@ -31,6 +31,8 @@ def parse_speed_opt():
 
 if __name__ == "__main__":
     opt = parse_speed_opt()
+    arg_str = "Args: " + ', '.join(f'{k}={v}' for k, v in vars(opt).items())
+    print(arg_str)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     # If multiple GPUs, this is primary GPU
 
@@ -40,9 +42,9 @@ if __name__ == "__main__":
 
     model_name = model.name         # If DaraParallel, can no longer access name attribute, save to variable
 
-    gpus = torch.cuda.device_count()
+    gpus = min(torch.cuda.device_count(), opt.GPUs)
+    print(f"Using {gpus} GPUs")
     if gpus > 1:
-        print(f"Using {gpus} GPUs")
         if opt.distDP:
             model = nn.parallel.DistributedDataParallel(model)
         else:
