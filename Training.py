@@ -52,25 +52,28 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation",
     for i in range (0, test_size):
         predicted_output = torch.clamp(predicted_output, min=0, max=1) # Clip values above 1 and below 0
 
-        predict = predicted_output.cpu()[i,:,:,:]
-        predict = predict.permute(1, 2, 0)
-        predict = predict.detach().numpy()
-        
-        grountruth = Y.cpu()[i,:,:,:]
-        grountruth = grountruth.permute(1, 2, 0)
-        grountruth = grountruth.detach().numpy()
+        predict = predicted_output[i,:,:,:]
+        ground_truth = Y[i,:,:,:]
+
         cos = torch.nn.CosineSimilarity(dim=0)
-        m = cos(predicted_output.cpu()[i,:,:,:],Y.cpu()[i,:,:,:])
-        mn = np.average(m.detach().numpy())
+        m = cos(predict[i,:,:,:],ground_truth)
+        mn = torch.mean(m)
         sam = math.acos(mn)*180/math.pi
-        all_psnr.append(psnr(grountruth, predict))
-        all_ssim.append(ssim(grountruth, predict))
         all_sam.append(sam)
+        
+        predict = predict.permute(1, 2, 0)
+        predict = predict.squeeze().cpu().detach().numpy()
+        ground_truth = ground_truth.permute(1, 2, 0)
+        ground_truth = ground_truth.squeeze().cpu().detach().numpy()
+        
+        all_psnr.append(psnr(ground_truth, predict))
+        all_ssim.append(ssim(ground_truth, predict))
+    
         if disp_imgs:
             fig, axs = plt.subplots(2)
-            fig.suptitle('PSNR = ' + str(psnr(predict,grountruth)) + ', SSIM = '+ str(ssim(predict, grountruth)) + ', SAM = ' + str(sam))
+            fig.suptitle('PSNR = ' + str(psnr(predict,ground_truth)) + ', SSIM = '+ str(ssim(predict, ground_truth)) + ', SAM = ' + str(sam))
             axs[0].imshow(predict[:,:,2],cmap='gray')
-            axs[1].imshow(grountruth[:,:,2],cmap='gray')
+            axs[1].imshow(ground_truth[:,:,2],cmap='gray')
     
     if log_img:
         # Create a wandb Table to log images
@@ -78,7 +81,6 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation",
     
         for disp_slice in disp_slices:
             b, c = disp_slice["b"], disp_slice["c"]
-            ofs = 0 if X.shape[0] < 100 else 1+(i+1)*10     # Offset value for selection of better display images (i.e. ones that are not primarily black)
             img = X[b, c].cpu().numpy()
             out = predicted_output[b, c].cpu().numpy()
             tar = Y[b, c].cpu().numpy()
