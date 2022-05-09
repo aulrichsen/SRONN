@@ -165,13 +165,13 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     #print('Testing samples: ', x_test.shape[0])
 
 
-    x_train = torch.from_numpy(x_train)
+    x_train = torch.clamp(torch.from_numpy(x_train), min=0, max=1)
     y_train = torch.from_numpy(y_train)
 
-    x_val = torch.from_numpy(x_val)
+    x_val = torch.clamp(torch.from_numpy(x_val), min=0, max=1)
     y_val = torch.from_numpy(y_val)
 
-    x_test = torch.from_numpy(x_test)
+    x_test = torch.clamp(torch.from_numpy(x_test), min=0, max=1)
     y_test = torch.from_numpy(y_test)
 
     band_rm_str = ""
@@ -216,6 +216,20 @@ def numeric_kernel(im, kernel, scale_factor, output_shape):
            np.round(np.linspace(0, im.shape[1] - 1 / scale_factor[1], output_shape[1])).astype(int), :]
 
 
+def get_tile_idxs(X_val, X_test, val_offset=0, test_offset=0):
+    val_tile_idxs = torch.zeros(X_val.shape[0], X_val.shape[1])
+    test_tile_idxs = torch.zeros(X_test.shape[0], X_test.shape[1])
+    for i in range(val_tile_idxs.shape[0]):
+        val_tile_idxs[i,:] = i + val_offset
+    for i in range(test_tile_idxs.shape[0]):
+        test_tile_idxs[i,:] = i + test_offset
+
+    val_tile_idxs = val_tile_idxs.reshape(-1)
+    test_tile_idxs = test_tile_idxs.reshape(-1)
+
+    return val_tile_idxs, test_tile_idxs
+
+
 def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
     test_dataset = "PaviaU"
 
@@ -224,6 +238,8 @@ def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
     C_len = 102     # Channel size of smallest dataset (Pavia)
 
     X_train, Y_train, X_val, Y_val, X_test, Y_test = [], [], [], [], [], []
+    val_tile_idxs, test_tile_idxs = False, False
+    val_offset, test_offset = 0, 0
 
     for dataset in datasets:
         _X_train, _Y_train, _X_val, _Y_val, _X_test, _Y_test, _ = get_data(dataset=dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
@@ -231,6 +247,17 @@ def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
         #print(data_name, _X_train.shape[1])
 
         if SISR:
+            _val_tile_idxs, _test_tile_idxs = get_tile_idxs(_X_val, _X_test, val_offset, test_offset)
+            if type(val_tile_idxs) == torch.Tensor:
+                val_tile_idxs = torch.cat((val_tile_idxs, _val_tile_idxs), dim=0)
+                test_tile_idxs = torch.cat((test_tile_idxs, _test_tile_idxs), dim=0)
+            else:
+                val_tile_idxs = _val_tile_idxs
+                test_tile_idxs = _test_tile_idxs
+            
+            val_offset = torch.max(val_tile_idxs) + 1
+            test_offset = torch.max(test_tile_idxs) + 1
+
             X_train.append(_X_train.reshape(-1, 1, _X_train.shape[-2], _X_train.shape[-1]))
             Y_train.append(_Y_train.reshape(-1, 1, _Y_train.shape[-2], _Y_train.shape[-1]))
             X_val.append(_X_val.reshape(-1, 1, _X_val.shape[-2], _X_val.shape[-1]))
@@ -267,6 +294,9 @@ def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
     X = torch.cat((X_1, X_2, X_3), dim=0)
     Y = torch.cat((Y_1, Y_2, Y_3), dim=0)
     if SISR:
+        _, _test_tile_idxs = get_tile_idxs(_X_val, X, val_offset, test_offset)
+        test_tile_idxs = torch.cat((test_tile_idxs, _test_tile_idxs), dim=0)
+
         X_test.append(X.reshape(-1, 1, X.shape[-2], X.shape[-1]))
         Y_test.append(Y.reshape(-1, 1, Y.shape[-2], Y.shape[-1]))
     else:
@@ -280,24 +310,25 @@ def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
     X_test = torch.cat(X_test, dim=0)
     Y_test = torch.cat(Y_test, dim=0)
 
-    return X_train, Y_train, X_val, Y_val, X_test, Y_test
+    return X_train, Y_train, X_val, Y_val, X_test, Y_test, val_tile_idxs, test_tile_idxs
 
 
 def get_dataloaders(opt, device):
     if opt.dataset == "All":
-        x_train, y_train, x_val, y_val, x_test, y_test = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel, SISR=opt.SISR)
+        x_train, y_train, x_val, y_val, x_test, y_test, val_tile_idxs, test_tile_idxs = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel, SISR=opt.SISR)
         dataset_name = "All x" + str(opt.scale)
     else:
         x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
         if opt.SISR:
+            # For sam reconstruction
+            val_tile_idxs, test_tile_idxs = get_tile_idxs(x_val, x_test)
+
             x_train = x_train.reshape(-1, 1, x_train.shape[-2], x_train.shape[-1])
             y_train = y_train.reshape(-1, 1, x_train.shape[-2], x_train.shape[-1])
             x_val = x_val.reshape(-1, 1, x_val.shape[-2], x_val.shape[-1])
             y_val = y_val.reshape(-1, 1, y_val.shape[-2], y_val.shape[-1])
             x_test = x_test.reshape(-1, 1, x_test.shape[-2], x_test.shape[-1])
             y_test = y_test.reshape(-1, 1, y_test.shape[-2], y_test.shape[-1])
-
-    if opt.SISR: dataset_name += " SISR"
 
     train_data = TensorDataset(x_train.to(device), y_train.to(device))
     train_dl = DataLoader(train_data, batch_size=opt.bs, shuffle=True)
@@ -307,6 +338,11 @@ def get_dataloaders(opt, device):
     test_dl = DataLoader(test_data, batch_size=opt.bs*2, shuffle=False)
 
     channels = x_train.shape[1]
+
+    if opt.SISR: 
+        dataset_name += " SISR"
+        val_dl.tile_idxs = val_tile_idxs
+        test_dl.tile_idxs = test_tile_idxs
 
     return train_dl, val_dl, test_dl, channels, dataset_name
 

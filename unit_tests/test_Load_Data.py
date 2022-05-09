@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from Load_Data import get_all_data, get_data, bicubic_lr
+from Load_Data import get_all_data, get_data, bicubic_lr, get_dataloaders
 
 class Test_Load_Data(unittest.TestCase):
 
@@ -31,10 +31,10 @@ class Test_Load_Data(unittest.TestCase):
         for ds in datasets:
             x_train, y_train, x_val, y_val, x_test, y_test, _ = get_data(dataset=ds)
             with self.subTest():
-                #self.assertEqual(max(torch.max(x_train), torch.max(x_val), torch.max(x_test)), 1.0, msg=f"{ds} X max not 1")
-                #self.assertEqual(max(torch.min(x_train), torch.min(x_val), torch.min(x_test)), 0.0, msg=f"{ds} X min not 1")
-                self.assertEqual(max(torch.max(y_train), torch.max(y_val), torch.max(y_test)), 1.0, msg=f"{ds} Y max not 1")
-                self.assertEqual(max(torch.min(y_train), torch.min(y_val), torch.min(y_test)), 0.0, msg=f"{ds} Y min not 1")
+                self.assertLessEqual(max(torch.max(x_train), torch.max(x_val), torch.max(x_test)), 1.0, msg=f"{ds} X max not <= 1.")
+                self.assertGreaterEqual(max(torch.min(x_train), torch.min(x_val), torch.min(x_test)), 0.0, msg=f"{ds} X min not >= 0.")
+                self.assertEqual(max(torch.max(y_train), torch.max(y_val), torch.max(y_test)), 1.0, msg=f"{ds} Y max not 1.")
+                self.assertAlmostEqual(max(torch.min(y_train), torch.min(y_val), torch.min(y_test)), 0.0, msg=f"{ds} Y min not 0.", delta=0.004)
 
     def test_reproducible(self):
         """
@@ -76,6 +76,38 @@ class Test_Load_Data(unittest.TestCase):
         self.assertLess(mse_loss(y1_val, y2_val[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
         self.assertLess(mse_loss(x1_test, x2_test[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
         self.assertLess(mse_loss(y1_test, y2_test[:, 3:-3, :, :]), tolerance, msg="x_train bands not removed correctly.")
+
+    def test_get_dataloaders_SISR(self):
+
+        class Parser():
+            def __init__(self):
+                self.dataset="All"
+                self.scale=2
+                self.SR_kernel=False
+                self.SISR=True
+                self.bs=64
+
+        test_opt = Parser()
+
+        train_dl, val_dl, test_dl, channels, dataset_name = get_dataloaders(test_opt, "cpu")
+
+        with self.subTest():
+            # Test channels and name returned
+            self.assertEqual(dataset_name, "All x2 SISR", msg="Dataset name incorrect.")
+            self.assertEqual(channels, 1, msg="Channels incorrect.")
+
+        with self.subTest():
+            # Test tile idxs
+            val_tile_idxs = val_dl.tile_idxs
+            unique_idxs = torch.unique(val_tile_idxs)
+            max_idx = int(torch.max(unique_idxs))
+            self.assertListEqual([i for i in range(max_idx+1)], unique_idxs.tolist(), msg="val_tile_idxs incorrect.")
+
+            test_tile_idxs = test_dl.tile_idxs
+            unique_idxs = torch.unique(test_tile_idxs)
+            max_idx = int(torch.max(unique_idxs))
+            self.assertListEqual([i for i in range(max_idx+1)], unique_idxs.tolist(), msg="test_tile_idxs incorrect.")
+
 
     """
     def test_get_all_data(self):

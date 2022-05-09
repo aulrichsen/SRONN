@@ -22,7 +22,7 @@ Current State of the art
 ...
 """
 
-def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation", disp_slices=get_disp_slices()):
+def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation", disp_slices=get_disp_slices(), SISR=False):
     """
     Get performance metrics
     PSNR: Peak Signal to Noise Ratio (higher the better); Spatial quality metric
@@ -48,18 +48,32 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation",
         X = torch.cat(X, dim=0)
         Y = torch.cat(Y, dim=0)
 
+    predicted_output = torch.clamp(predicted_output, min=0, max=1) # Clip values above 1 and below 0
+    cos = torch.nn.CosineSimilarity(dim=0)
+
+    if SISR:
+        # Calculate sam values for SISR
+        unique_tile_idxs = torch.unique(val_dl.tile_idxs)
+        for idx in unique_tile_idxs:
+            tile_idxs = torch.where(val_dl.tile_idxs==idx, 1, 0)
+            predict = predicted_output[tile_idxs]
+            ground_truth = Y[tile_idxs]
+            m = cos(predict,ground_truth)
+            mn = torch.mean(m)
+            sam = math.acos(mn)*180/math.pi
+            all_sam.append(sam)
+
     test_size = predicted_output.size()[0]
-    for i in range (0, test_size):
-        predicted_output = torch.clamp(predicted_output, min=0, max=1) # Clip values above 1 and below 0
+    for i in range(0, test_size):
 
         predict = predicted_output[i,:,:,:]
         ground_truth = Y[i,:,:,:]
 
-        cos = torch.nn.CosineSimilarity(dim=0)
-        m = cos(predict,ground_truth)
-        mn = torch.mean(m)
-        sam = math.acos(mn)*180/math.pi
-        all_sam.append(sam)
+        if not SISR:
+            m = cos(predict,ground_truth)
+            mn = torch.mean(m)
+            sam = math.acos(mn)*180/math.pi
+            all_sam.append(sam)
         
         predict = predict.permute(1, 2, 0)
         predict = predict.squeeze().cpu().detach().numpy()
@@ -71,6 +85,7 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation",
     
         if disp_imgs:
             fig, axs = plt.subplots(2)
+            if SISR: sam = all_sam[val_dl.tile_idxs[i]]
             fig.suptitle('PSNR = ' + str(psnr(predict,ground_truth)) + ', SSIM = '+ str(ssim(predict, ground_truth)) + ', SAM = ' + str(sam))
             axs[0].imshow(predict[:,:,2],cmap='gray')
             axs[1].imshow(ground_truth[:,:,2],cmap='gray')
@@ -186,7 +201,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         loss = sum(total_loss)/len(total_loss)  # get average loss for the epoch for display
 
         log_img = (epoch + 1) % 200 == 0        # Only save images to wandb every 200 epcohs (speeds up sync)
-        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=log_img, disp_slices=get_disp_slices(opt.dataset, opt.SISR))
+        val_psnr, val_ssim, val_sam = eval(model, val_dl, log_img=log_img, disp_slices=get_disp_slices(opt.dataset, opt.SISR), SISR=opt.SISR)
         psnrs.append(val_psnr)
         ssims.append(val_ssim)
         sams.append(val_sam)
@@ -246,7 +261,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     save_models = ["SAM", "PSNR", "SSIM"]
     for save_model in save_models:
         model.load_state_dict(torch.load(model_name+f"_best_{save_model}.pth.tar"))
-        _psnr, _ssim, _sam = eval(model, test_dl, log_img=save_model=="SSIM", table_type="test", disp_slices=get_disp_slices(opt.dataset, opt.SISR))    # wandb log SSIM test images
+        _psnr, _ssim, _sam = eval(model, test_dl, log_img=save_model=="SSIM", table_type="test", disp_slices=get_disp_slices(opt.dataset, opt.SISR), SISR=opt.SISR)    # wandb log SSIM test images
         stats_msg = f"best {save_model} model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
         print(stats_msg)
         with open('training_info.txt', 'a') as f:

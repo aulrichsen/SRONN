@@ -3,10 +3,11 @@ import unittest
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 
 from Training import eval
-from Load_Data import HSI_Dataset
+from Load_Data import get_dataloaders
+
 
 class Test_Model_Identical(nn.Module):
     def __init__(self):
@@ -33,7 +34,7 @@ class Test_Training(unittest.TestCase):
     
     def test_eval_identical(self):
         test_img = torch.rand(41,103,64,64)
-        test_data = HSI_Dataset(test_img, test_img)
+        test_data = TensorDataset(test_img, test_img)
         test_dl = DataLoader(test_data, batch_size=64, shuffle=False)
 
         test_model = Test_Model_Identical().to(self.device)
@@ -47,7 +48,7 @@ class Test_Training(unittest.TestCase):
     def test_eval_different(self):
         test_img = torch.rand(41,103,64,64).to(self.device)
         test_tar = torch.rand(41,103,64,64)
-        test_data = HSI_Dataset(test_img, test_tar)
+        test_data = TensorDataset(test_img, test_tar)
         test_dl = DataLoader(test_data, batch_size=64, shuffle=False)
 
         test_model = Test_Model_Different(channels=103).to(self.device)
@@ -58,4 +59,24 @@ class Test_Training(unittest.TestCase):
         self.assertLess(ssim, 1, msg='SSIM too high for different input and target.')
         self.assertGreater(sam, 0, msg='SAM too low for different input and output.')
 
-    
+    def test_eval_SISR(self):
+
+        class Parser():
+            def __init__(self):
+                self.dataset="Pavia"
+                self.scale=2
+                self.SR_kernel=False
+                self.SISR=True
+                self.bs=64
+
+        test_opt = Parser()
+
+        train_dl, val_dl, test_dl, channels, dataset_name = get_dataloaders(test_opt, "cpu")
+        
+        test_model = Test_Model_Different(channels=1)
+
+        psnr, ssim, sam = eval(test_model, test_dl, SISR=True)
+
+        self.assertLess(psnr, 100, msg="PSNR too high for different input output.")
+        self.assertLess(ssim, 1, msg='SSIM too high for different input and target.')
+        self.assertGreater(sam, 0, msg='SAM too low for different input and output.')
