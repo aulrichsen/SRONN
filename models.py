@@ -11,15 +11,15 @@ def get_model(opt, channels):
         model = SRCNN(channels=channels)
         opt.q = 1
         opt.weight_transfer = False
-    if opt.model == "SRCNN_residual":
+    elif opt.model == "SRCNN_residual":
         model = SRCNN(channels=channels, is_residual=True)
         opt.q = 1
         opt.weight_transfer = False
-    if opt.model == "SRCNN_3D":
+    elif opt.model == "SRCNN_3D":
         model = SRCNN_3D()
         opt.q = 1
         opt.weight_transfer = False
-    if opt.model == "SRCNN_3D_residual":
+    elif opt.model == "SRCNN_3D_residual":
         model = SRCNN_3D(is_residual=True)
         opt.q = 1
         opt.weight_transfer = False

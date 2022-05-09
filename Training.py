@@ -184,7 +184,6 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
         total_loss = []
         for x_train, y_train in train_dl:
-
             output = model(x_train)
             #print(x_train.shape, output.shape, y_train.shape)
             loss = loss_function(output, y_train)  
