@@ -167,9 +167,9 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), model_name+"_best_SAM.pth.tar")       
 
 
-        forward_times = [r(t) for t in forward_times]
-        backward_times = [r(t) for t in backward_times]
-        opt_times = [r(t) for t in opt_times]
+        forward_times = r(sum(forward_times))
+        backward_times = r(sum(backward_times))
+        opt_times = r(sum(opt_times))
         epoch_summary = f"Epoch: {epoch+1} | Forward: {forward_times} | Backward: {backward_times} | opt: {opt_times} | Eval: {r(eval_time)} | Epoch time: {r(time.time()-epoch_start_time)}s"
         print(epoch_summary)
 
