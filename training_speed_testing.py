@@ -66,7 +66,8 @@ if __name__ == "__main__":
 
     model_name = model.name         # If DaraParallel, can no longer access name attribute, save to variable
 
-    gpus = torch.cuda.device_count()
+    gpus = min(torch.cuda.device_count(), opt.GPUs)
+    print(f"Using {gpus} GPUs")
     if gpus > 1:
         print(f"Using {gpus} GPUs")
         model = nn.DataParallel(model)
