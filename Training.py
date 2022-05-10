@@ -141,7 +141,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     logging.basicConfig(filename='training.log', filemode='w', level=logging.DEBUG)    # filemode='w' resets logger on every run  
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     # If multiple GPUs, this is primary GPU
-
+    """
     wandb.init(
             project="HSI Super Resolution",
             group=model.name,
@@ -149,7 +149,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
             config={"num_params": model.num_params}
         )
     wandb.config.update(opt)
-
+    """
     model_name = model.name         # If DaraParallel, can no longer access name attribute, save to variable
 
     gpus = torch.cuda.device_count()
@@ -163,11 +163,11 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, opt.lr_milestones)
 
     loss_function = get_loss_function(opt)
-
+    """
     now = datetime.now()
     wandb.run.name = now.strftime("%d/%m/%Y, %H:%M:%S")
     print("wandb name:", wandb.run.name)
-
+    """
     best_psnr = best_vals[0]
     best_ssim = best_vals[1]
     best_sam = best_vals[2]
@@ -221,7 +221,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
                         "val/SSIM": max(round(val_ssim, 5), 0.8),       # Only log SSIMs above 0.8 to avoid bad plot scale
                         "val/SAM": min(round(val_sam, 5), 10)           # Only log SAMs below 10 to avoid bad plot scale
             }
-            wandb.log(metrics)
+            #wandb.log(metrics)
     
         # Check if new best made and save models if so
         if val_psnr > best_psnr:
@@ -266,7 +266,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         with open('training_info.txt', 'a') as f:
             f.write(stats_msg + '\n')
         # Finnish on SSIM model stats for wandb saving
-
+    """
     wandb.run.summary["test_PSNR_from_best_SSIM_model"] = _psnr
     wandb.run.summary["test_SSIM_from_best_SSIM_model"] = _ssim
     wandb.run.summary["test_SAM_from_best_SSIM_model"] = _sam
@@ -276,7 +276,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     wandb.run.summary["best_val_SAM"] = min(sams)
 
     wandb.finish()
-
+    """
     return psnrs, ssims, sams
 
 if __name__ == '__main__':
