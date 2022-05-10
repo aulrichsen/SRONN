@@ -68,7 +68,6 @@ if __name__ == "__main__":
     gpus = min(torch.cuda.device_count(), opt.GPUs)
     print(f"Using {gpus} GPUs")
     if gpus > 1:
-        print(f"Using {gpus} GPUs")
         model = nn.DataParallel(model)
         model = model.to(device)
 
@@ -137,7 +136,7 @@ if __name__ == "__main__":
         ssims.append(val_ssim)
         sams.append(val_sam)
 
-        epoch_summary = f"Epoch: {epoch+1} | Loss: {round(loss.item(), 7)} | PSNR: {round(val_psnr, 3)} | SSIM: {round(val_ssim, 3)} | SAM: {round(val_sam, 3)} | LR: {current_lr} | Epoch time: {round(time.time() - start_time, 2)}s"
+        epoch_summary = f"Epoch: {epoch+1} | Loss: {round(loss.item(), 7)} | PSNR: {round(val_psnr, 3)} | SSIM: {round(val_ssim, 3)} | SAM: {round(val_sam, 3)} | LR: {current_lr} | Epoch time: {round(time.time() - epoch_start_time, 2)}s"
         logging.info(epoch_summary)
 
         if (epoch + 1) % opt.metrics_step == 0 or epoch == 0:

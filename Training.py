@@ -174,7 +174,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     psnrs, ssims, sams = [], [], []
 
     for epoch in range(opt.epochs):
-        start_time = time.time()
+        epoch_start_time = time.time()
         
         model.train()
     
@@ -205,7 +205,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         ssims.append(val_ssim)
         sams.append(val_sam)
 
-        epoch_summary = f"Epoch: {epoch+1} | Loss: {round(loss.item(), 7)} | PSNR: {round(val_psnr, 3)} | SSIM: {round(val_ssim, 3)} | SAM: {round(val_sam, 3)} | LR: {current_lr} | Epoch time: {round(time.time() - start_time, 2)}s"
+        epoch_summary = f"Epoch: {epoch+1} | Loss: {round(loss.item(), 7)} | PSNR: {round(val_psnr, 3)} | SSIM: {round(val_ssim, 3)} | SAM: {round(val_sam, 3)} | LR: {current_lr} | Epoch time: {round(time.time() - epoch_start_time, 2)}s"
         logging.info(epoch_summary)
 
         if (epoch + 1) % opt.metrics_step == 0 or epoch == 0:
