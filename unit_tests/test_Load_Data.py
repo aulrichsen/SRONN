@@ -102,12 +102,13 @@ class Test_Load_Data(unittest.TestCase):
             unique_idxs = torch.unique(val_tile_idxs)
             max_idx = int(torch.max(unique_idxs))
             self.assertListEqual([i for i in range(max_idx+1)], unique_idxs.tolist(), msg="val_tile_idxs incorrect.")
+            self.assertGreater(len(val_tile_idxs), unique_idxs.shape[0], msg="val_tile_idxs not long enough.")
 
             test_tile_idxs = test_dl.tile_idxs
             unique_idxs = torch.unique(test_tile_idxs)
             max_idx = int(torch.max(unique_idxs))
             self.assertListEqual([i for i in range(max_idx+1)], unique_idxs.tolist(), msg="test_tile_idxs incorrect.")
-
+            self.assertGreater(len(test_tile_idxs), unique_idxs.shape[0], msg="test_tile_idxs not long enough.")
 
     """
     def test_get_all_data(self):

@@ -12,6 +12,7 @@ from training_setup import *
 from Load_Data import get_dataloaders
 
 def r(num, dp=3):
+    # Rounding function
     return round(num, dp)
 
 

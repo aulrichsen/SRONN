@@ -53,11 +53,13 @@ def get_loss_function(opt):
 def get_disp_slices(slices="default", SISR=False):
     """
     Choose specific indicies for wandb display
+
+    ** NEED to make consistent **
     """
     
     if slices == "All":
         if SISR:
-            # SISR
+            # SISR, 102 channels
             disp_slices =  [{'b': 10656, 'c': 0}, {'b': 6772, 'c': 0}, {'b': 7790, 'c': 0}, {'b': 7302, 'c': 0}, {'b': 3908, 'c': 0}, {'b': 8391, 'c': 0}]
         else:
             disp_slices = [{'b': 94, 'c': 82}, {'b': 55, 'c': 0}, {'b': 126, 'c': 56}, {'b': 28, 'c': 98}, {'b': 88, 'c': 61}, {'b': 125, 'c': 74}]
