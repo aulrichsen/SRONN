@@ -12,6 +12,29 @@ from sklearn.model_selection import train_test_split
 import cv2
 from patchify import patchify
 
+"""
+Dataset Info:
+        Source: https://paperswithcode.com/dataset/botswana
+    Botswana: 
+        Info:   Hyperion sensor on EO-1, 30 m pixel resolution over a 7.7 km strip in 242 bands covering the 400-2500 nm in 10 nm windows. 
+                Uncalibrated and noisy bands that cover water absorption features were removed, and the remaining 145 bands were included as candidate features: [10-55, 82-97, 102-119, 134-164, 187-220].
+    Cuprite:
+        Info:   AVIRIS Sensor 224 channels, ranging from 370 nm to 2480 nm. Noisy channels (1-2 and 221-224) and water absorption channels (104-113 and 148-167) removed, resulting in 188 channels.
+    Indian_pines:
+        Info:   AVIRIS Sensor 224 spectral reflectance bands in the wavelength range 0.4-2.5 10e-6 meters. Reduced bands to 200 by removing bands covering the region of water absorption: [104-108], [150-163].
+    KSC:
+        Info:   AVIRIS Sensor 224 channels, 400-2500nm in 10nm steps. Acquired from 20km altitude with resolution of 18m. 176 bands after noise removal.
+    Pavia:
+        Info:   ROSIS sensor 102 bands. 1.3m resolution.
+    Pavia University:
+        Info:   ROSIS sensor 103 bands. 1.3m resolution.
+    Salinas:
+        Info:   AVIRIS sensor 224 bands. Bands [108-112] and [154-167] discarded. 3.7m resolution.
+    UbranData:
+        Info:   210 Bands 400-2500nm in 10nm steps. Channels 1-4, 76, 87, 101-111, 136-153 and 198-210 removed, resulting in 162 channels. 2m resolution.
+
+"""
+
 
 
 def imshow(img):
@@ -25,25 +48,29 @@ def hsi_normalize_full(hsi):
     img = tmp/np.max(tmp)
     return img
 
-def bicubic_lr(img, ratio):
+def gauss_noise(shape, var=0.0001):
+  return (var**0.5)*np.random.randn(shape)
+
+def bicubic_lr(img, ratio, sigma=None, noise_var=0):
     """
     Function to create Low Resolution images using Bicubic Interpolation
     """
 
     if ratio == 2:
-        sigma = 0.8943
+        if sigma is None: sigma = 0.8943
     else:
-        sigma = 1.6986
+        if sigma is None: sigma = 1.6986
 
     [h, w, d] = img.shape
     
-    img = cv2.GaussianBlur(img, (0, 0), sigma, sigma) # run in a loop
+    img = cv2.GaussianBlur(img, (0, 0), sigma, sigma) 
     
     im_down = img[::ratio,::ratio, :]
+    im_down += gauss_noise(im_down.shape, noise_var)
     img_up = cv2.resize(im_down, (w, h),interpolation=cv2.INTER_CUBIC)
     return img_up
 
-def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
+def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False, sigma=None, noise_var=0):
 
     # Find directory for relevant computer
     PC_DIR = 'C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset'  # For my PC
@@ -148,7 +175,7 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False):
     else:
         for hr_tile_norm in hr_tiles:
             #print("Processing tile # " , i)
-            lr_tiles.append(bicubic_lr(hr_tile_norm, res_ratio))
+            lr_tiles.append(bicubic_lr(hr_tile_norm, res_ratio, sigma=sigma, noise_var=noise_var))
 
 
     X = np.array(lr_tiles)
@@ -231,9 +258,15 @@ def get_tile_idxs(X_val, X_test, val_offset=0, test_offset=0):
 
 
 def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
+    noise_var = 0.00005     # Variance of gaussian noise added to LR image
+    
     test_dataset = "PaviaU"
 
     datasets = ["Botswana", 'Cuprite', 'Indian_Pines', "KSC", "Pavia", "Salinas", "Urban"]
+    if res_ratio == 2:
+        sigma_dict = {"Botswana":1.4, 'Cuprite': 0.8, 'Indian_Pines': 0.9, "KSC": 1.3, "Pavia": 1.1, "Salinas": 1.2, "Urban": 0.89}     # Look up table for different blur values for each dataset
+    else:
+        sigma_dict = {"Botswana":1.66, 'Cuprite': 1.45, 'Indian_Pines': 1.8, "KSC": 1.4, "Pavia": 1.7, "Salinas": 1.5, "Urban": 1.6}     # Look up table for different blur values for each dataset
 
     C_len = 102     # Channel size of smallest dataset (Pavia)
 
@@ -242,7 +275,7 @@ def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
     val_offset, test_offset = 0, 0
 
     for dataset in datasets:
-        _X_train, _Y_train, _X_val, _Y_val, _X_test, _Y_test, _ = get_data(dataset=dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
+        _X_train, _Y_train, _X_val, _Y_val, _X_test, _Y_test, _ = get_data(dataset=dataset, res_ratio=res_ratio, SR_kernel=SR_kernel, sigma=sigma_dict[dataset], noise_var=noise_var)
 
         #print(data_name, _X_train.shape[1])
 
@@ -290,7 +323,7 @@ def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
                 Y_test.append(_Y_test[:, c:c+C_len])
         
     # Pavia U for testing
-    X_1, Y_1, X_2, Y_2, X_3, Y_3, _ = get_data(dataset=test_dataset, res_ratio=res_ratio, SR_kernel=SR_kernel)
+    X_1, Y_1, X_2, Y_2, X_3, Y_3, _ = get_data(dataset=test_dataset, res_ratio=res_ratio, SR_kernel=SR_kernel, noise_var=noise_var)
     X = torch.cat((X_1, X_2, X_3), dim=0)
     Y = torch.cat((Y_1, Y_2, Y_3), dim=0)
     if SISR:

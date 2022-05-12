@@ -1,6 +1,6 @@
 import unittest
 
-#from unit_tests.test_Load_Data import Test_Load_Data
+from unit_tests.test_Load_Data import Test_Load_Data
 from unit_tests.test_Training import Test_Training
 #from unit_tests.test_metrics import Test_Metrics
 
