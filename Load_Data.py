@@ -49,7 +49,7 @@ def hsi_normalize_full(hsi):
     return img
 
 def gauss_noise(shape, var=0.0001):
-  return (var**0.5)*np.random.randn(shape)
+  return (var**0.5)*np.random.randn(*shape)
 
 def bicubic_lr(img, ratio, sigma=None, noise_var=0):
     """
