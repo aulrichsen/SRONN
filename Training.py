@@ -1,3 +1,4 @@
+import os
 import math
 import logging
 import time
@@ -16,6 +17,7 @@ from datetime import datetime
 from Load_Data import get_dataloaders
 from training_setup import *
 from models import get_model
+from Test_Model import test_model
 
 """
 Current State of the art
@@ -141,12 +143,19 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     arg_str = "Args: " + ', '.join(f'{k}={v}' for k, v in vars(opt).items())
     print(arg_str)
 
-    with open('training_info.txt', 'w') as f:
+    if not os.path.isdir("Results/"):
+        os.mkdir("Results")
+
+    now = datetime.now()
+    save_dir = "Results/" + now.strftime("%d_%m_%Y %H_%M_%S") + " " + model.name + " " + jt
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
+    with open(save_dir+'/training_info.txt', 'w') as f:
         for k, v in vars(opt).items():
             f.write(f'{k}: {v}\n')
 
     print("Starting training...")
-    logging.basicConfig(filename='training.log', filemode='w', level=logging.DEBUG)    # filemode='w' resets logger on every run  
+    logging.basicConfig(filename=save_dir+'/training.log', filemode='w', level=logging.DEBUG)    # filemode='w' resets logger on every run  
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     # If multiple GPUs, this is primary GPU
 
@@ -234,16 +243,16 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         # Check if new best made and save models if so
         if val_psnr > best_psnr:
             best_psnr = val_psnr
-            torch.save(model.state_dict(), model_name+"_best_PSNR.pth.tar")
+            torch.save(model.state_dict(), save_dir+"/"+model_name+"_best_PSNR.pth.tar")
         if val_ssim > best_ssim:
             best_ssim = val_ssim
-            torch.save(model.state_dict(), model_name+"_best_SSIM.pth.tar")
+            torch.save(model.state_dict(), save_dir+"/"+model_name+"_best_SSIM.pth.tar")
         if val_sam < best_sam:
             best_sam = val_sam
-            torch.save(model.state_dict(), model_name+"_best_SAM.pth.tar")       
+            torch.save(model.state_dict(), save_dir+"/"+model_name+"_best_SAM.pth.tar")       
 
     # Save validation stats
-    with open('training_info.txt', 'a') as f:
+    with open(save_dir+'/training_info.txt', 'a') as f:
         f.write("\nValidation Stats\n")
         f.write(f'Best PSNR: {best_psnr} | Best SSIM: {best_ssim} | Best SAM: {best_sam}\n')
         f.write("\nTest Stats\n")
@@ -261,19 +270,26 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
     ax[2].set_title("SAM Per Epoch")
     ax[2].set_xlabel("Epoch")
     ax[2].set_ylabel("SAM")
-    fig.savefig("Training Plots.png")
+    fig.savefig(save_dir+"/Training Plots.png")
     #plt.show()
 
     # Test on all checkpointed models
     save_models = ["SAM", "PSNR", "SSIM"]
     for save_model in save_models:
-        model.load_state_dict(torch.load(model_name+f"_best_{save_model}.pth.tar"))
+        model.load_state_dict(torch.load(save_dir+"/"+model_name+f"_best_{save_model}.pth.tar"))
         _psnr, _ssim, _sam = eval(model, test_dl, log_img=save_model=="SSIM", table_type="test", disp_slices=get_disp_slices(opt.dataset, opt.SISR), SISR=opt.SISR)    # wandb log SSIM test images
         stats_msg = f"best {save_model} model: PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
         print(stats_msg)
-        with open('training_info.txt', 'a') as f:
+        with open(save_dir+'/training_info.txt', 'a') as f:
             f.write(stats_msg + '\n')
         # Finnish on SSIM model stats for wandb saving
+
+    disp_slices=None
+    if opt.SISR:
+        step = 40
+        end = (test_dl.__len__() - 1) * opt.bs
+        disp_slices = [{'b': i, 'c': 0} for i in range(0, end, step)]     # ** ADD SISR disp_slices here **
+    test_model(model, test_dl, opt, save_dir=save_dir, disp_slices=disp_slices)
 
     wandb.run.summary["test_PSNR_from_best_SSIM_model"] = _psnr
     wandb.run.summary["test_SSIM_from_best_SSIM_model"] = _ssim

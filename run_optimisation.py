@@ -12,7 +12,7 @@ from skopt.learning import GaussianProcessRegressor
 from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
 
 
-from utils import *
+from utils.general import *
 
 from Training import train
 from models import SRCNN, SRONN, SRONN_BN, SRONN_L2

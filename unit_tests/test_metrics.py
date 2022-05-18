@@ -38,3 +38,21 @@ class Test_Metrics(unittest.TestCase):
         ind_chan_ssim = [ssim(test_ip[:,:,i], test_tar[:,:,i]) for i in range(c)]
 
         self.assertAlmostEqual(all_ssim, np.mean(ind_chan_ssim), msg="All SSIM not equal to mean individual channel SSIM.", delta=0.001)
+
+    """
+    # ** Will cause failure if psnr of full HSI images averaged vs individual slices. **
+
+    def test_psnrs_cube_vs_slices(self):
+        
+        ip2 = np.random.rand(64, 64, test_chans)
+        tar2 = np.random.rand(64, 64, test_chans)
+        all_psnr2 = psnr(ip2, tar2, data_range=1)
+        indi_psnrs2 = [psnr(ip2[:,:,i], tar2[:,:,i], data_range=1) for i in range(test_chans)]
+        
+        ip3 = np.random.rand(64, 64, test_chans)
+        tar3 = np.random.rand(64, 64, test_chans)
+        all_psnr3 = psnr(ip3, tar3, data_range=1)
+        indi_psnrs3 = [psnr(ip3[:,:,i], tar3[:,:,i], data_range=1) for i in range(test_chans)]
+        
+        self.assertAlmostEqual(np.mean([all_psnr1, all_psnr2, all_psnr3]), np.mean(indi_psnrs1+indi_psnrs2+indi_psnrs3), msg="Full PSNR does not match individual slice PSNR average for three tiles.", delta=0.001)
+    """

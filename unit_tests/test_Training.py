@@ -6,27 +6,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from Training import eval
+from Training import train, eval
 from Load_Data import get_dataloaders, get_data
-
-
-class Test_Model_Identical(nn.Module):
-    def __init__(self):
-        super(Test_Model_Identical, self).__init__()
-        
-        self.conv = nn.Conv2d(10,10,3)
-
-    def forward(self, x):
-        return x    # Output identical to input
-
-class Test_Model_Different(nn.Module):
-    def __init__(self, channels):
-        super(Test_Model_Different, self).__init__()
-        
-        self.conv = nn.Conv2d(channels,channels,3, padding='same')
-
-    def forward(self, x):
-        return self.conv(x)    # Output identical to input
+from utils.test import Test_Model_Identical, Test_Model_Different, Test_Parser
 
 
 class Test_Training(unittest.TestCase):
@@ -64,7 +46,7 @@ class Test_Training(unittest.TestCase):
 
         class Parser():
             def __init__(self):
-                self.dataset="Pavia"
+                self.dataset="PaviaU"
                 self.scale=2
                 self.SR_kernel=False
                 self.SISR=True
@@ -123,28 +105,19 @@ class Test_Training(unittest.TestCase):
             self.assertEqual(sam, SISR_sam, msg="SISR SAM not correct.")
 
 
-    def test_PSNR(self):
-        # Test sklearn psnr function
+    def test_train(self):
 
-        test_chans = 5
-        ip1 = np.random.rand(64, 64, test_chans)
-        tar1 = np.random.rand(64, 64, test_chans)
-        all_psnr1 = psnr(ip1, tar1, data_range=1)
-        indi_psnrs1 = [psnr(ip1[:,:,i], tar1[:,:,i], data_range=1) for i in range(test_chans)]
-        self.assertAlmostEqual(all_psnr1, np.mean(indi_psnrs1), msg="Full PSNR does not match individual slice PSNR average for single tile.", delta=0.001)
+        opt = Test_Parser()
+        opt.epochs = 3
+        opt.model = "Test_Model_Different"      
+        opt.SISR = False 
 
-        """
-        # ** Will cause failure if psnr of full HSI images averaged vs individual slices. **
+        train_dl, val_dl, test_dl, channels, dataset_name = get_dataloaders(opt, "cpu")
 
-        ip2 = np.random.rand(64, 64, test_chans)
-        tar2 = np.random.rand(64, 64, test_chans)
-        all_psnr2 = psnr(ip2, tar2, data_range=1)
-        indi_psnrs2 = [psnr(ip2[:,:,i], tar2[:,:,i], data_range=1) for i in range(test_chans)]
-        
-        ip3 = np.random.rand(64, 64, test_chans)
-        tar3 = np.random.rand(64, 64, test_chans)
-        all_psnr3 = psnr(ip3, tar3, data_range=1)
-        indi_psnrs3 = [psnr(ip3[:,:,i], tar3[:,:,i], data_range=1) for i in range(test_chans)]
-        
-        self.assertAlmostEqual(np.mean([all_psnr1, all_psnr2, all_psnr3]), np.mean(indi_psnrs1+indi_psnrs2+indi_psnrs3), msg="Full PSNR does not match individual slice PSNR average for three tiles.", delta=0.001)
-        """
+        model = Test_Model_Different(channels)
+
+        psnrs, ssims, sams = train(model, train_dl, val_dl, test_dl, opt, jt=dataset_name)
+
+        self.assertEqual(len(psnrs), opt.epochs, msg="train returned incorrect number of PSNR values.")
+        self.assertEqual(len(ssims), opt.epochs, msg="train returned incorrect number of SSIM values.")
+        self.assertEqual(len(sams), opt.epochs, msg="train returned incorrect number of SAM values.")

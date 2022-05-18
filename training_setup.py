@@ -8,7 +8,7 @@ def parse_train_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default="SRONN", help='Model to use for training.')
     parser.add_argument('--q', type=int, default=3, help='q order of model. (for CNN is 1).')
-    parser.add_argument('--dataset', type=str, default="Pavia", help="Dataset to train on.")
+    parser.add_argument('--dataset', type=str, default="PaviaU", help="Dataset to train on.")
     parser.add_argument('--scale', type=int, default=2, help="Super resolution scale factor.")
     parser.add_argument('--epochs', type=int, default=10000, help="Number of epochs to train for.")
     parser.add_argument('--lr', type=float, default=0.0001, help="Starting training learning rate.")

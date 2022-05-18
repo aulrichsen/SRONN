@@ -11,8 +11,8 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 
 from models import *
 from Load_Data import get_data, HSI_Dataset
-from Training import eval
-from utils import imshow
+import Training
+from utils.general import imshow
 
 
 def parse_opt():
@@ -27,6 +27,98 @@ def parse_opt():
     print(arg_str)
 
     return opt
+
+
+def test_model(model, test_dl, opt, save_dir=None, disp_slices=None):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    model.eval()    
+    _psnr, _ssim, _sam = Training.eval(model, test_dl)
+    metric_info = f"PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
+    print(metric_info)
+
+    if not os.path.isdir("Results/"):
+        os.mkdir("Results")
+
+    now = datetime.now()
+    
+    if save_dir is None:
+        # Default saving directory
+        save_dir = "Results/" + now.strftime("%d_%m_%Y %H_%M_%S") + " " + model.name
+    elif save_dir[:8] != "Results/":
+        save_dir = "Results/" + save_dir    
+
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
+        
+    if not os.path.isdir(save_dir + "/objective"):
+        os.mkdir(save_dir+'/objective')
+
+    with open(save_dir+'/objective/info.txt', 'w') as f:
+        f.write('Average Test Metrics\n')
+        f.write(metric_info)
+
+    with torch.no_grad(): 
+        output = []
+        test_X = []
+        test_Y = []
+        for x_test, y_test in iter(test_dl):
+            output.append(model(x_test))
+            test_X.append(x_test)
+            test_Y.append(y_test)
+
+        output = torch.cat(output, dim=0)
+        test_X = torch.cat(test_X, dim=0)
+        test_Y = torch.cat(test_Y, dim=0)
+
+    if disp_slices is None:
+        # Default display slices
+        disp_slices = []
+        for disp_img in range(test_Y.shape[0]):
+            for disp_chan in range(disp_img, test_Y.shape[1], 10):
+                disp_slices.append({'b': disp_img, 'c': disp_chan})
+
+    for disp_slice in disp_slices:
+        img = test_X[disp_slice['b'], disp_slice['c'], :, :].unsqueeze(0).detach().cpu()
+        out = output[disp_slice['b'], disp_slice['c'], :, :].unsqueeze(0).detach().cpu()
+        lab = test_Y[disp_slice['b'], disp_slice['c'], :, :].unsqueeze(0).detach().cpu()
+
+        out = torch.clamp(out, min=0, max=1)
+        images = torch.stack([img, out, lab])
+
+        PSNR = psnr(lab.permute(1,2,0).cpu().detach().numpy(), out.permute(1,2,0).cpu().detach().numpy())
+        #SSIM = ssim(lab.permute(1,2,0).cpu().detach().numpy(), out.permute(1,2,0).cpu().detach().numpy())
+        SSIM = ssim(lab[0].cpu().detach().numpy(), out[0].cpu().detach().numpy())
+        imshow(torchvision.utils.make_grid(images), title=save_dir+'/objective'+f"/Img {disp_slice['b']}, Slice {disp_slice['c']}, PSNR {round(PSNR)}", plt_title=f"Low Res  | Output {round(PSNR, 2)} PSNR, {round(SSIM, 2)} SSIM |   High Res")
+
+    if not os.path.isdir(save_dir + "/true"):
+        os.mkdir(save_dir + '/true')
+
+
+    # Perform Super resolution on original data (subjective)
+    for disp_slice in disp_slices:
+        if opt.SISR:
+            img = test_Y[disp_slice['b'], disp_slice['c'], :, :].detach().cpu().numpy()
+            [h, w] = img.shape
+        else:
+            img = test_Y[disp_slice['b'], :, :, :].detach().cpu()
+            img = img.permute(1,2,0).numpy()
+            [h, w, d] = img.shape
+            
+        test_X_true = cv2.resize(img, (w*opt.scale, h*opt.scale), interpolation=cv2.INTER_CUBIC)
+        test_X_true = torch.Tensor(test_X_true).to(device)
+        test_X_true = test_X_true.unsqueeze(0)
+        if opt.SISR:
+            test_X_true = test_X_true.unsqueeze(0)
+        else:
+            test_X_true = test_X_true.permute(0,3,1,2)
+        with torch.no_grad(): 
+            output = model(test_X_true)
+
+        out = torch.clamp(output[:, disp_slice['c']], min=0, max=1)
+        images = torch.stack([test_X_true[:, disp_slice['c']], out])
+        imshow(torchvision.utils.make_grid(images.cpu().detach()), title=save_dir+'/true'+f"/Img {disp_slice['b']}, Slice {disp_slice['c']}", plt_title=f"Interpolation | Output")
+
 
 if __name__ == "__main__":
     
@@ -64,65 +156,5 @@ if __name__ == "__main__":
 
     model.load_state_dict(torch.load(opt.model_file, map_location=torch.device(device)))
     model.to(device)
-    model.eval()
-
-    _psnr, _ssim, _sam = eval(model, test_dl)
-    metric_info = f"PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
-    print(metric_info)
-
-    if not os.path.isdir("images/"):
-        os.mkdir("images")
-
-    now = datetime.now()
-    save_dir = "images/" + model.name + " " + now.strftime("%d_%m_%Y %H_%M_%S")
-    if not os.path.isdir(save_dir):
-        os.mkdir(save_dir)
-        
-    if not os.path.isdir(save_dir + "/objective"):
-        os.mkdir(save_dir+'/objective')
-
-    with open(save_dir+'/objective/info.txt', 'w') as f:
-        f.write('Average Test Metrics\n')
-        f.write(metric_info)
-
-    with torch.no_grad(): 
-        output = []
-        for x_test, y_test in iter(test_dl):
-            output.append(model(x_test))
-            
-        output = torch.cat(output, dim=0)
-        
-
-    for disp_img in range(test_X.shape[0]):
-        for disp_chan in range(disp_img, test_X.shape[1], 10):
-            img = test_X[disp_img, disp_chan].unsqueeze(0).detach().cpu()
-            out = output[disp_img, disp_chan].unsqueeze(0).detach().cpu()
-            lab = test_Y[disp_img, disp_chan].unsqueeze(0).detach().cpu()
-
-            out = torch.clamp(out, min=0, max=1)
-            images = torch.stack([img, out, lab])
-
-            PSNR = psnr(lab.permute(1,2,0).cpu().detach().numpy(), out.permute(1,2,0).cpu().detach().numpy())
-            #SSIM = ssim(lab.permute(1,2,0).cpu().detach().numpy(), out.permute(1,2,0).cpu().detach().numpy())
-            SSIM = ssim(lab[0].cpu().detach().numpy(), out[0].cpu().detach().numpy())
-            imshow(torchvision.utils.make_grid(images), title=save_dir+'/objective'+f"/Img {disp_img}, Slice {disp_chan}, PSNR {round(PSNR)}", plt_title=f"Low Res  | Output {round(PSNR, 2)} PSNR, {round(SSIM, 2)} SSIM |   High Res")
-
-    if not os.path.isdir(save_dir + "/true"):
-        os.mkdir(save_dir + '/true')
-
-    # Perform Super resolution on original data (subjective)
-    for disp_img in range(test_Y.shape[0]):
-        for disp_chan in range(disp_img, test_Y.shape[1], 10):
-            img = test_Y[disp_img].detach().cpu()
-            img = img.permute(1,2,0).numpy()
-            [h, w, d] = img.shape
-            
-            test_X_true = cv2.resize(img, (w*opt.scale, h*opt.scale),interpolation=cv2.INTER_CUBIC)
-            test_X_true = torch.Tensor(test_X_true).to(device).permute(2,0,1)
-            test_X_true = test_X_true.unsqueeze(0)
-            with torch.no_grad(): 
-                output = model(test_X_true)
-
-            out = torch.clamp(output[:,disp_chan], min=0, max=1)
-            images = torch.stack([test_X_true[:, disp_chan], out])
-            imshow(torchvision.utils.make_grid(images.cpu().detach()), title=save_dir+'/true'+f"/Img {disp_img}, Slice {disp_chan}", plt_title=f"Interpolation | Output")
+    
+    test_model(model, test_dl, opt)

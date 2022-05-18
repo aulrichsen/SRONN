@@ -14,7 +14,7 @@ from patchify import patchify
 
 """
 Dataset Info:
-        Source: https://paperswithcode.com/dataset/botswana
+        Source: https://rslab.ut.ac.ir/data
     Botswana: 
         Info:   Hyperion sensor on EO-1, 30 m pixel resolution over a 7.7 km strip in 242 bands covering the 400-2500 nm in 10 nm windows. 
                 Uncalibrated and noisy bands that cover water absorption features were removed, and the remaining 145 bands were included as candidate features: [10-55, 82-97, 102-119, 134-164, 187-220].
