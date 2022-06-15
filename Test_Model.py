@@ -11,7 +11,7 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 
 from models import *
 from Load_Data import get_data, HSI_Dataset
-from Training import eval
+from eval import eval
 from utils.general import imshow
 
 
@@ -33,7 +33,7 @@ def test_model(model, test_dl, opt, save_dir=None, disp_slices=None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     model.eval()    
-    _psnr, _ssim, _sam = Training.eval(model, test_dl)
+    _psnr, _ssim, _sam = eval(model, test_dl)
     metric_info = f"PSNR: {round(_psnr, 3)} | SSIM: {round(_ssim, 3)} | SAM: {round(_sam, 3)}"
     print(metric_info)
 
