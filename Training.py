@@ -120,7 +120,7 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation",
 
     return avg_psnr, avg_ssim, avg_sam
 
-def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
+def train(model, train_dl, val_dl, test_dl, dataset_name, opt, best_vals=(0,0,1000)):
     """
     train a model for HSI super resolution
 
@@ -136,8 +136,6 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         lr_milestones:  epoch milestones where learning rate reduction of lr*0.1 occurs
         metrics_step:   epoch divider to display training statistics on
     best_vals:  initial values for model saving to start on (psnr, ssim, sam), i.e. only save psnr on validation psnr of better than best_vals[0]
-    wb_group:   wandb group name for saving
-    jt:         wandb job type name for saving
     """
 
     arg_str = "Args: " + ', '.join(f'{k}={v}' for k, v in vars(opt).items())
@@ -147,7 +145,7 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
         os.mkdir("Results")
 
     now = datetime.now()
-    save_dir = "Results/" + now.strftime("%d_%m_%Y %H_%M_%S") + " " + model.name + " " + jt
+    save_dir = "Results/" + now.strftime("%d_%m_%Y %H_%M_%S") + " " + model.name + " " + dataset_name
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
     with open(save_dir+'/training_info.txt', 'w') as f:
@@ -159,10 +157,20 @@ def train(model, train_dl, val_dl, test_dl, opt, best_vals=(0,0,1000), jt=None):
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')     # If multiple GPUs, this is primary GPU
 
+    if opt.wandb_group == 'none':
+        opt.wandb_group = None
+    elif opt.wandb_group == 'model_name':
+        opt.wandb_group = opt.model_name
+
+    if opt.wandb_jt == 'none':
+        opt.wandb_jt = None
+    elif opt.wandb_jt == 'dataset_name':
+        opt.wandb_jt = dataset_name
+
     wandb.init(
-            project="HSI Super Resolution",
-            group=model.name,
-            job_type=jt,
+            project="HSI-Super-Resolution",
+            group=opt.wandb_group,
+            job_type=opt.wandb_jt,
             config={"num_params": model.num_params}
         )
     wandb.config.update(opt)
@@ -311,7 +319,8 @@ if __name__ == '__main__':
 
     train_dl, val_dl, test_dl, channels, dataset_name = get_dataloaders(opt, device)
 
-    model = get_model(opt, channels).to(device)
+    model, model_name = get_model(opt, channels).to(device)
+    opt.model_name = model_name     # Update to add residual and norm type if applicable
 
-    psnrs, ssims, sams = train(model, train_dl, val_dl, test_dl, opt, jt=dataset_name)
+    psnrs, ssims, sams = train(model, train_dl, val_dl, test_dl, dataset_name, opt)
 

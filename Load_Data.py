@@ -70,7 +70,7 @@ def bicubic_lr(img, ratio, sigma=None, noise_var=0):
     img_up = cv2.resize(im_down, (w, h),interpolation=cv2.INTER_CUBIC)
     return img_up
 
-def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False, sigma=None, noise_var=0):
+def get_data(dataset="PaviaU", res_ratio=2, bands_to_remove=[], SR_kernel=False, sigma=None, noise_var=0):
 
     # Find directory for relevant computer
     PC_DIR = 'C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset'  # For my PC
