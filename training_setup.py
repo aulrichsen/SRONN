@@ -28,7 +28,7 @@ def parse_train_opt():
     parser.add_argument('--lr_ms', dest="lr_milestones", nargs="+", type=int, default=[2500, 8000], help="Epochs at which to decrease learning rate by 10x.")
     parser.add_argument('--opt', dest="optimizer", type=str, default="Adam", help="Training optimizer to use.")
     parser.add_argument('--loss', dest="loss_function", type=str, default="MSE", help="Training loss function to use.")
-    parser.add_argument('--ms', dest="metrics_step", type=int, default=10, help="Number of epochs between logging and display.")
+    parser.add_argument('--ms', dest="metrics_step", type=int, default=100, help="Number of epochs between logging and display.")
     parser.add_argument('--clip', dest="grad_clip", action='store_true', help='Apply gradient clipping.')
     parser.add_argument('--clip_val', type=float, default=1, help='Gradient clipping parameter (Only applied if --clip set).')
     parser.add_argument('--bs', type=int, default=64, help="Training batch size.")

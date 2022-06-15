@@ -144,10 +144,17 @@ def train(model, train_dl, val_dl, test_dl, dataset_name, opt, best_vals=(0,0,10
             if sams.index(min(sams)) >= len(sams) - opt.metrics_step: new_best_msg += " | new best SAM! " + str(round(min(sams), 3))
             
             print(epoch_summary + new_best_msg)
+            """
             metrics = {"train/loss": min(round(loss.item(),7), 0.01),   # Only log losses below 0.01 to avoid bad plot scale
                         "val/PSNR": max(round(val_psnr, 5), 25),        # Only log PSNRs above 25 to avoid bad plot scale
                         "val/SSIM": max(round(val_ssim, 5), 0.8),       # Only log SSIMs above 0.8 to avoid bad plot scale
                         "val/SAM": min(round(val_sam, 5), 10)           # Only log SAMs below 10 to avoid bad plot scale
+            }
+            """
+            metrics = {"train/loss": loss.item(),   # Only log losses below 0.01 to avoid bad plot scale
+                        "val/PSNR": val_psnr,        # Only log PSNRs above 25 to avoid bad plot scale
+                        "val/SSIM": val_ssim,       # Only log SSIMs above 0.8 to avoid bad plot scale
+                        "val/SAM": val_sam           # Only log SAMs below 10 to avoid bad plot scale
             }
             wandb.log(metrics)
     
