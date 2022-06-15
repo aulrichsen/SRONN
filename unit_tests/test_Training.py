@@ -116,7 +116,7 @@ class Test_Training(unittest.TestCase):
 
         model = Test_Model_Different(channels)
 
-        psnrs, ssims, sams = train(model, train_dl, val_dl, test_dl, opt, jt=dataset_name)
+        psnrs, ssims, sams = train(model, train_dl, val_dl, test_dl, dataset_name, opt)
 
         self.assertEqual(len(psnrs), opt.epochs, msg="train returned incorrect number of PSNR values.")
         self.assertEqual(len(ssims), opt.epochs, msg="train returned incorrect number of SSIM values.")

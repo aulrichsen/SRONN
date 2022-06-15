@@ -1,4 +1,5 @@
 
+from email.errors import NonPrintableDefect
 import torch
 import torch.nn as nn
 
@@ -28,6 +29,8 @@ class Test_Parser:
         self.SR_kernel=False
         self.bs=64
         self.SISR=False
+        self.wandb_group=None
+        self.wandb_jt=None
 
 
 class Test_Model_Identical(nn.Module):

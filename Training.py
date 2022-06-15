@@ -222,7 +222,8 @@ if __name__ == '__main__':
 
     train_dl, val_dl, test_dl, channels, dataset_name = get_dataloaders(opt, device)
 
-    model, model_name = get_model(opt, channels).to(device)
+    model, model_name = get_model(opt, channels)
+    model = model.to(device)
     opt.model_name = model_name     # Update to add residual and norm type if applicable
 
     psnrs, ssims, sams = train(model, train_dl, val_dl, test_dl, dataset_name, opt)
