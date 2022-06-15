@@ -145,12 +145,12 @@ class SRCNN(nn.Module):
 
         self.conv_1 = nn.Conv2d(channels, 128, kernel_size=9, padding='same') # Saye valid padding in SRCNN repo ...
         self.norm1 = norm_layer(128)
-        nn.init.xavier_uniform_(self.conv_1.weight)  # Init with golrot uniform weights
+        #nn.init.xavier_uniform_(self.conv_1.weight)  # Init with golrot uniform weights
         self.conv_2 = nn.Conv2d(128, 64, kernel_size=3, padding='same')
         self.norm2 = norm_layer(64)
-        nn.init.xavier_uniform_(self.conv_2.weight)  # Init with golrot uniform weights
+        #nn.init.xavier_uniform_(self.conv_2.weight)  # Init with golrot uniform weights
         self.conv_3 = nn.Conv2d(64, channels, kernel_size=5, padding='same')    # Saye valid padding in SRCNN repo ...
-        nn.init.xavier_uniform_(self.conv_3.weight)  # Init with golrot uniform weights
+        #nn.init.xavier_uniform_(self.conv_3.weight)  # Init with golrot uniform weights
         
         self.relu = nn.ReLU()
 
