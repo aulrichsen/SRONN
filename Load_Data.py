@@ -151,7 +151,7 @@ def get_data(dataset="Pavia", res_ratio=2, bands_to_remove=[], SR_kernel=False, 
     # get image tiles (64x64 sub images of original hsi cube)
     hr_tiles = []
     patch_size = 64
-    TILES = patchify(hsi, (patch_size,patch_size,hsi.shape[2]), step=patch_size )
+    TILES = patchify(hsi, (patch_size,patch_size,hsi.shape[2]), step=patch_size)
     for i in range(TILES.shape[0]):
         for j in range(TILES.shape[1]):          
             hr_tiles.append(np.squeeze(TILES[i,j,:,:,:,:], axis = (0,)))
