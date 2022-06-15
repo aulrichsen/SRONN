@@ -34,8 +34,8 @@ def parse_train_opt():
     parser.add_argument('--bs', type=int, default=64, help="Training batch size.")
 
     # Logging parameters
-    parser.add_argument('--wandb_group', type=str, defalut='model_name', help='name of wandb run group. model_name - use name of model | none - no group | other -custom.')
-    parser.add_argument('--wandb_jt', type=str, defalut='dataset_name', help='name of wandb job_type. dataset_name - use name of dataset | none - no job_type | other -custom.')
+    parser.add_argument('--wandb_group', type=str, default='model_name', help='name of wandb run group. model_name - use name of model | none - no group | other -custom.')
+    parser.add_argument('--wandb_jt', type=str, default='dataset_name', help='name of wandb job_type. dataset_name - use name of dataset | none - no job_type | other -custom.')
 
     opt = parser.parse_args()
 
