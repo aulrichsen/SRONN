@@ -11,7 +11,7 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 
 from models import *
 from Load_Data import get_data, HSI_Dataset
-import Training
+from Training import eval
 from utils.general import imshow
 
 
