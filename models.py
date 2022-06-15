@@ -9,7 +9,7 @@ import functools
 from SelfONN import SelfONN2d
 def get_model(opt, channels):
 
-    norm_layer = get_norm_layer(opt.norm_layer)
+    norm_layer = get_norm_layer(opt.norm_type)
 
     if opt.model == "SRCNN":
         model = SRCNN(channels=channels, norm_layer=norm_layer, is_residual=opt.is_residual)
@@ -27,8 +27,8 @@ def get_model(opt, channels):
     if opt.is_residual:
         model_name += "_residual"
 
-    if opt.norm != "none":
-        model_name += "_" + opt.norm + "_norm"
+    if opt.norm_type != "none":
+        model_name += "_" + opt.norm_type + "_norm"
 
     init_weights(model, init_type=opt.init_type, init_gain=opt.init_gain)
     
