@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 
+from training_setup import get_disp_slices
+
 def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation", disp_slices=get_disp_slices(), SISR=False):
     """
     Get performance metrics
