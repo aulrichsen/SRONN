@@ -88,11 +88,12 @@ def eval(model, val_dl, disp_imgs=False, log_img=False, table_type="validation",
     
         for disp_slice in disp_slices:
             b, c = disp_slice["b"], disp_slice["c"]
-            img = X[b, c].cpu().numpy()
-            out = predicted_output[b, c].cpu().numpy()
-            tar = Y[b, c].cpu().numpy()
-            # ** Recorded table metrics are for since slice and NOT full HSI image. **
-            table.add_data(wandb.Image(img*255), wandb.Image(out*255), wandb.Image(tar*255), psnr(tar, out), ssim(tar, out))    
+            if b < X.shape[0] and c < X.shape[1]:
+                img = X[b, c].cpu().numpy()
+                out = predicted_output[b, c].cpu().numpy()
+                tar = Y[b, c].cpu().numpy()
+                # ** Recorded table metrics are for since slice and NOT full HSI image. **
+                table.add_data(wandb.Image(img*255), wandb.Image(out*255), wandb.Image(tar*255), psnr(tar, out), ssim(tar, out))    
         wandb.log({table_type+"_predictions":table}, commit=False)
 
     if disp_imgs: fig.savefig(disp_imgs)
