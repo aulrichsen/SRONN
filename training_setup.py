@@ -23,9 +23,9 @@ def parse_train_opt():
     parser.add_argument('--SR_kernel', action='store_true', help='Use KernelGAN downsampling.')
 
     # Training parameters
-    parser.add_argument('--epochs', type=int, default=10000, help="Number of epochs to train for.")
+    parser.add_argument('--epochs', type=int, default=50000, help="Number of epochs to train for.")
     parser.add_argument('--lr', type=float, default=0.0001, help="Starting training learning rate.")
-    parser.add_argument('--lr_ms', dest="lr_milestones", nargs="+", type=int, default=[2500, 8000], help="Epochs at which to decrease learning rate by 10x.")
+    parser.add_argument('--lr_ms', dest="lr_milestones", nargs="+", type=int, default=[5000, 40000], help="Epochs at which to decrease learning rate by 10x.")
     parser.add_argument('--opt', dest="optimizer", type=str, default="Adam", help="Training optimizer to use.")
     parser.add_argument('--loss', dest="loss_function", type=str, default="MSE", help="Training loss function to use.")
     parser.add_argument('--ms', dest="metrics_step", type=int, default=100, help="Number of epochs between logging and display.")
