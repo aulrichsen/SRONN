@@ -51,7 +51,7 @@ def hsi_normalize_full(hsi):
 def gauss_noise(shape, var=0.0001):
   return (var**0.5)*np.random.randn(*shape)
 
-def bicubic_lr(img, ratio, sigma=None, noise_var=0):
+def bicubic_lr(img, ratio, sigma=None, noise_var=0.00005):
     """
     Function to create Low Resolution images using Bicubic Interpolation
     """
@@ -257,8 +257,7 @@ def get_tile_idxs(X_val, X_test, val_offset=0, test_offset=0):
     return val_tile_idxs, test_tile_idxs
 
 
-def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
-    noise_var = 0.00005     # Variance of gaussian noise added to LR image
+def get_all_data(res_ratio=2, SR_kernel=False, SISR=False, noise_var=0.00005):
     
     test_dataset = "PaviaU"
 
@@ -348,7 +347,7 @@ def get_all_data(res_ratio=2, SR_kernel=False, SISR=False):
 
 def get_dataloaders(opt, device):
     if opt.dataset == "All":
-        x_train, y_train, x_val, y_val, x_test, y_test, val_tile_idxs, test_tile_idxs = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel, SISR=opt.SISR)
+        x_train, y_train, x_val, y_val, x_test, y_test, val_tile_idxs, test_tile_idxs = get_all_data(res_ratio=opt.scale, SR_kernel=opt.SR_kernel, SISR=opt.SISR, noise_var=opt.noise_var)
         dataset_name = "All x" + str(opt.scale)
     else:
         x_train, y_train, x_val, y_val, x_test, y_test, dataset_name = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)

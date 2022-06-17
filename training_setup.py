@@ -21,6 +21,7 @@ def parse_train_opt():
     parser.add_argument('--dataset', type=str, default="PaviaU", help="Dataset to train on.")
     parser.add_argument('--scale', type=int, default=2, help="Super resolution scale factor.")
     parser.add_argument('--SR_kernel', action='store_true', help='Use KernelGAN downsampling.')
+    parser.add_argument('--noise_var', typ=float, default=0.00005, help='Variance of gaussian nosie added to dataset.')
 
     # Training parameters
     parser.add_argument('--epochs', type=int, default=50000, help="Number of epochs to train for.")
