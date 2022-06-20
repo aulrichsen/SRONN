@@ -11,7 +11,7 @@ from datetime import datetime
 from models import *
 from Load_Data import get_data
 from Training import eval
-from utils import loadSamples, imshow
+from utils.general import loadSamples, imshow
 
 """
 Stats file structure: list of dicts where each dict contains a givens sample's statistics
