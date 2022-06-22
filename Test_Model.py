@@ -17,11 +17,23 @@ from utils.general import imshow
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_file', type=str, default='SRCNN_best_PSNR.pth.tar', help="File name of model.")
+    # Model parameters
+    parser.add_argument('--model', type=str, default="SRONN", help='Model to used in training for evaluation.')
+    parser.add_argument('--q', type=int, default=3, help='q order of ONN model. (for CNN is 1).')
+    parser.add_argument('--SISR', action='store_true', help='Perform SR on each channel individually.')
+    parser.add_argument('--norm_type', type=str, default='none', help='Type of normalisation to use. none | batch | instance | l1 | l2.')
+    parser.add_argument('--is_residual', action='store_true', help="Add residual connection to model.")
+    parser.add_argument('--trans', dest="weight_transfer", action='store_true', help='Transfer weights from SRCNN model.')
+    parser.add_argument('--checkpoint', type=str, default='SRCNN_best_PSNR.pth.tar', help="File name of model weights to load in.")
+    parser.add_argument('--init_type', type=str, default='normal', help='network initialization [normal | xavier | kaiming | orthogonal]')
+    parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
+
+    # Dataset parameters    
     parser.add_argument('--dataset', type=str, default="Pavia", help="Dataset trained on.")
     parser.add_argument('--scale', type=int, default=2, help="Super resolution scale factor.")
     parser.add_argument('--SR_kernel', action='store_true', help='Use KernelGAN downsampling.')
-    
+    parser.add_argument('--noise_var', type=float, default=0.00005, help='Variance of gaussian nosie added to dataset.')
+
     opt = parser.parse_args()
     arg_str = "Args: " + ', '.join(f'{k}={v}' for k, v in vars(opt).items())
     print(arg_str)
@@ -127,23 +139,8 @@ if __name__ == "__main__":
     _, _, _, _, test_X, test_Y, _ = get_data(dataset=opt.dataset, res_ratio=opt.scale, SR_kernel=opt.SR_kernel)
     channels = test_X.shape[1]
 
-    if "SRONN_BN" in opt.model_file:
-        model = SRONN_BN(channels=channels)
-    elif "SRONN_AEP_residual" in opt.model_file:
-        model = SRONN_AEP(channels=channels, is_residual=True)
-    elif "SRONN_AEP" in opt.model_file:
-        model = SRONN_AEP(channels=channels)
-    elif "SRONN_residual" in opt.model_file:
-        model = SRONN(channels=channels, is_residual=True)
-    elif "SRONN" in opt.model_file:
-        model = SRONN(channels=channels)
-    elif "SRCNN_residual" in opt.model_file:
-        model = SRCNN(channels=channels, is_residual=True)
-    elif "SRCNN" in opt.model_file:
-        model = SRCNN(channels=channels)
-    else:
-        assert False, "Model file does not match any model in repo."
-        
+    model, _ = get_model(opt, channels)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("device:", device)
 
@@ -154,7 +151,6 @@ if __name__ == "__main__":
     test_data = HSI_Dataset(test_X, test_Y)
     test_dl = DataLoader(test_data, batch_size=bs, shuffle=False)
 
-    model.load_state_dict(torch.load(opt.model_file, map_location=torch.device(device)))
     model.to(device)
     
     test_model(model, test_dl, opt)

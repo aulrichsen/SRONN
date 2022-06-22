@@ -7,6 +7,7 @@ import functools
 #from Self_ONN import Operator_Layer
 #from fastonn import SelfONN2d
 from SelfONN import SelfONN2d
+
 def get_model(opt, channels):
 
     norm_layer = get_norm_layer(opt.norm_type)
