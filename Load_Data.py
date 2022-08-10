@@ -73,7 +73,7 @@ def bicubic_lr(img, ratio, sigma=None, noise_var=0.00005):
 def get_data(dataset="PaviaU", res_ratio=2, bands_to_remove=[], SR_kernel=False, sigma=None, noise_var=0):
 
     # Find directory for relevant computer
-    PC_DIR = 'C:/Users/psb15138/Documents/Uni/PTL/ONN/dataset'  # For my PC
+    PC_DIR = 'C:/Users/psb15138/Documents/Uni/ONN/dataset'  # For my PC
     MAC_DIR = "../datasets"  # For my Mac
     NOUR_DIR = 'D:/HSI_SR_datasets'  # Nour's directory
     COLAB_DIR = '/content/gdrive/My Drive/PhD/SR/dataset'
