@@ -254,7 +254,7 @@ class SRONN_AEP(nn.Module):
         self.op_1 = SelfONN2d(channels, 32, 9, q=q, padding='same')
         self.norm1 = norm_layer(32)
         self.op_2 = SelfONN2d(32, 16, 3, q=q, padding='same')
-        self.norm2 = norm_layer(32)
+        self.norm2 = norm_layer(16)
         self.op_3 = SelfONN2d(16, channels, 5, q=q, padding='same')
 
         self.tanh = nn.Tanh()
