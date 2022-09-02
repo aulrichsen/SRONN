@@ -1,3 +1,4 @@
+import os
 import pandas as pd 
 import wandb
 api = wandb.Api()
@@ -21,7 +22,7 @@ for run in runs:
     jt = config['wandb_jt']
     if jt not in results[group].keys(): results[group][jt] = {}
 
-print(results)
+#print(results)
 
 for run in runs: 
     # .summary contains the output keys/values for metrics like accuracy.
@@ -60,5 +61,27 @@ for stat_key in stats.keys():
                 data.append(results[group_key][jt_key][stat_key])
     df_out[stat_key] = data
 
+if not os.path.isdir('Results_Tables'):
+    os.mkdir('Results_Tables')
+
 runs_df = pd.DataFrame(df_out)
-runs_df.to_csv("project.csv")
+runs_df.to_csv("Results_Tables/All.csv")
+
+
+datasets = set(df_out['dataset'])   # Get unique dataset values
+
+for dataset in datasets:
+    df_out = {}
+    for stat_key in stats.keys():
+        data = []
+        for group_key in sorted(results):
+            for jt_key in sorted(results[group_key]):
+                result = results[group_key][jt_key]
+                if result != {} and result['dataset'] == dataset and result['scale'] == 2:
+                    data.append(results[group_key][jt_key][stat_key])
+                    #print(data)
+        df_out[stat_key] = data
+    #print()
+    #print(df_out)
+    ds_df = pd.DataFrame(df_out)
+    ds_df.to_csv('Results_Tables/'+dataset+".csv")
