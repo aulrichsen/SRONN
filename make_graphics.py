@@ -90,6 +90,12 @@ tar_slice = hr_tiles[img_idx][slice_idx, :,:].to(device)
 print(tar_slice.shape)
 '''
 
+# Change directory to oneDrive
+for model in best_results.keys():
+    for ds in best_results[model].keys():
+        if best_results[model][ds]['folder']:
+            best_results[model][ds]['folder'] = 'C:/Users/psb15138/OneDrive - University of Strathclyde/PhD' + best_results[model][ds]['folder'].split('..')[-1]
+
 srcnn_weights = get_model_file('SRCNN')
 sronn_weights = get_model_file('SRONN')
 ssronn_weights = get_model_file('SRONN_AEP')
@@ -535,4 +541,5 @@ def make_true_SR_figure():
     cv2.destroyAllWindows()
 
 
-make_true_SR_figure()
+make_objective_SR_figure()
+#make_true_SR_figure()

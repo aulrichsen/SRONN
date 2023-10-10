@@ -51,7 +51,7 @@ def hsi_normalize_full(hsi):
 def gauss_noise(shape, var=0.0001):
   return (var**0.5)*np.random.randn(*shape)
 
-def bicubic_lr(img, ratio, sigma=None, noise_var=0.00005):
+def gaussian_lr(img, ratio, sigma=None, noise_var=0.00005):
     """
     Function to create Low Resolution images using Bicubic Interpolation
     """
@@ -175,7 +175,7 @@ def get_data(dataset="PaviaU", res_ratio=2, bands_to_remove=[], SR_kernel=False,
     else:
         for hr_tile_norm in hr_tiles:
             #print("Processing tile # " , i)
-            lr_tiles.append(bicubic_lr(hr_tile_norm, res_ratio, sigma=sigma, noise_var=noise_var))
+            lr_tiles.append(gaussian_lr(hr_tile_norm, res_ratio, sigma=sigma, noise_var=noise_var))
 
 
     X = np.array(lr_tiles)

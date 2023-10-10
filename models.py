@@ -7,6 +7,7 @@ import functools
 #from Self_ONN import Operator_Layer
 #from fastonn import SelfONN2d
 from SelfONN import SelfONN2d
+from SRDenseNet import SRDenseNet
 
 def get_model(opt, channels):
 
@@ -21,6 +22,8 @@ def get_model(opt, channels):
     elif opt.model == "SRONN_AEP":
         model = SRONN_AEP(channels=channels, q=opt.q, norm_layer=norm_layer, is_residual=opt.is_residual)
         opt.weight_transfer = False
+    #elif opt.model == "SRDenseNet":
+    #    model = SRDenseNet(growthRate= , nDenselayer=, channels=channels)
     else:
         assert False, "Invalid model type."
         

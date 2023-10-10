@@ -207,7 +207,7 @@ def train(model, train_dl, val_dl, test_dl, dataset_name, opt, best_vals=(0,0,10
         step = 40
         end = (test_dl.__len__() - 1) * opt.bs
         disp_slices = [{'b': i, 'c': 0} for i in range(0, end, step)]     # ** ADD SISR disp_slices here **
-    test_model(model, test_dl, opt, save_dir=save_dir, disp_slices=disp_slices)
+    #test_model(model, test_dl, opt, save_dir=save_dir, disp_slices=disp_slices)
 
     wandb.run.summary["test_PSNR_from_best_SSIM_model"] = _psnr
     wandb.run.summary["test_SSIM_from_best_SSIM_model"] = _ssim
