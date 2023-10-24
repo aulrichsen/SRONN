@@ -1,12 +1,14 @@
-# Self-ONN #
+# SRONN #
 
-Alexander Ulrichsen's implementation of Self-ONN from paper: https://arxiv.org/pdf/2004.11778.pdf
+Hyperspectral image super-resolution using Self-organized Operational Neural Networks with Generative Neurons: https://arxiv.org/pdf/2004.11778.pdf
 
-## File descriptors: ##
-
-Self_ONN:           contains Operator_Layer class which is essentially the ONN version of nn.Conv2d()
-models:             contains basic ONN which has an embedding output
-test_ONN_learning:  creates random input and random (non-linear) target funtion and trains network to see if weights from target function can be learned.
+If you use this code please cite this paper:  
+@article{ulrichsen2023operational,  
+&emsp; title={Operational Neural Networks for Efficient Hyperspectral Single-Image Super-Resolution},  
+&emsp; author={Ulrichsen, Alexander and Murray, Paul and Marshall, Stephen and Gabbouj, Moncef and Kiranyaz, Serkan and Yamac, Mehmet and Aburaed, Nour},  
+&emsp; journal={arXiv preprint arXiv:2303.16636},  
+&emsp; year={2023}  
+}
 
 ## Quick start ##
 
